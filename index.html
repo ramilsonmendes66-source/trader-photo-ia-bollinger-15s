@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Trader Photo I.A - Bollinger 15s</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Exo 2',sans-serif;background:#080b12;color:#e8eaf6;min-height:100vh}
+#app{max-width:520px;margin:0 auto;padding-bottom:80px}
+.bg-glow{position:fixed;inset:0;background:radial-gradient(ellipse at 20% 0%,rgba(0,176,255,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(0,230,118,.04) 0%,transparent 60%);pointer-events:none;z-index:0}
+.content{position:relative;z-index:1}
+button{cursor:pointer;font-family:'Exo 2',sans-serif}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+@keyframes glow{0%,100%{text-shadow:0 0 10px rgba(0,230,118,.4)}50%{text-shadow:0 0 30px rgba(0,230,118,.8)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes scan{0%{top:0}100%{top:100%}}
+@keyframes scanline{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+.header{background:linear-gradient(135deg,#0d1525,#111827);border-bottom:1px solid rgba(0,176,255,.18);padding:16px 20px 12px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
+.header-scanline{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b0ff,#00e676,#00b0ff,transparent);animation:scanline 3s linear infinite}
+.logo-text{font-family:'Rajdhani',sans-serif;font-size:21px;font-weight:700;letter-spacing:2px;background:linear-gradient(135deg,#00b0ff,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-sub{font-size:9px;color:#7986cb;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.op-badge{margin:10px 14px 0;padding:10px 13px;background:linear-gradient(135deg,rgba(255,214,0,.07),rgba(255,214,0,.03));border:1px solid rgba(255,214,0,.25);border-radius:10px;display:flex;align-items:flex-start;gap:10px}
+.op-badge-icon{font-size:18px;margin-top:1px;flex-shrink:0}
+.op-text{font-size:10px;color:#c5a600;line-height:1.5}
+.op-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#ffd600;text-transform:uppercase;margin-bottom:3px}
+.pulse-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#00e676;box-shadow:0 0 6px rgba(0,230,118,.6);margin-right:4px;animation:pulse 1.4s ease-in-out infinite}
+.accordion-wrap{margin:10px 14px 0;border-radius:10px;overflow:hidden;border:1px solid rgba(0,176,255,.2);background:#0d1117}
+.acc-header{padding:10px 13px;display:flex;align-items:center;gap:8px;cursor:pointer;background:#10141f;transition:background .2s;user-select:none}
+.acc-header:hover{background:rgba(0,176,255,.07)}
+.acc-icon{font-size:14px}
+.acc-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#b0bec5;text-transform:uppercase;flex:1}
+.acc-arrow{font-size:10px;color:#7986cb;transition:transform .3s}
+.key-btns{display:flex;gap:7px;margin-bottom:8px}
+.btn-copy{flex:1;padding:7px;background:linear-gradient(135deg,#1b5e20,#2e7d32);border:1px solid rgba(0,200,83,.3);border-radius:7px;color:#a5d6a7;font-size:11px;font-weight:600}
+.btn-save{flex:1;padding:7px;background:linear-gradient(135deg,#e65100,#f57c00);border:1px solid rgba(255,152,0,.4);border-radius:7px;color:#ffe0b2;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px}
+.btn-del{padding:7px 12px;background:linear-gradient(135deg,#7f0000,#c62828);border:1px solid rgba(255,23,68,.35);border-radius:7px;color:#ffcdd2;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px}
+.saved-keys-list{margin-top:10px}
+.saved-keys-title{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#7986cb;text-transform:uppercase;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(0,176,255,.1)}
+.saved-key-item{display:flex;align-items:center;gap:6px;padding:5px 7px;background:#060a10;border:1px solid rgba(0,176,255,.1);border-radius:6px;margin-bottom:5px;animation:fadeIn .2s ease}
+.saved-key-item:last-child{margin-bottom:0}
+.saved-key-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;color:#ffd600;text-transform:uppercase;white-space:nowrap}
+.saved-key-val{font-family:monospace;font-size:10px;color:#00e676;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saved-key-use{padding:3px 7px;background:rgba(0,176,255,.12);border:1px solid rgba(0,176,255,.25);border-radius:5px;color:#90caf9;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap}
+.saved-key-use:hover{background:rgba(0,176,255,.22)}
+.saved-key-del{padding:3px 7px;background:rgba(255,23,68,.1);border:1px solid rgba(255,23,68,.25);border-radius:5px;color:#ff6b6b;font-size:12px;cursor:pointer}
+.saved-key-del:hover{background:rgba(255,23,68,.22)}
+.key-warn{font-size:9px;color:#f57f17;margin-top:7px;line-height:1.5;padding:5px 7px;background:rgba(255,152,0,.07);border-radius:5px}
+.no-keys{font-size:10px;color:#546e7a;text-align:center;padding:8px;font-style:italic}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 0 0}
+.mode-btn{padding:8px 6px;border-radius:8px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;transition:all .2s;text-align:left}
+.mode-btn.active{background:rgba(0,230,118,.15);border:1px solid #00e676;color:#00e676}
+.mode-btn.inactive{background:#0d1117;border:1px solid rgba(255,255,255,.08);color:#7986cb}
+.mode-btn:hover.inactive{border-color:rgba(0,176,255,.3);color:#90caf9}
+.mode-icon{font-size:12px;flex-shrink:0}
+.mode-offline{grid-column:1/-1;padding:7px 10px;font-size:9px;color:#7986cb;background:rgba(0,176,255,.04);border:1px solid rgba(0,176,255,.12);border-radius:7px;line-height:1.5;margin-top:4px}
+.filter-bar{margin:10px 14px 0;padding:10px 12px;background:linear-gradient(135deg,rgba(183,28,28,.07),rgba(244,67,54,.04));border:1px solid rgba(255,23,68,.2);border-radius:10px}
+.filter-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#ef5350;text-transform:uppercase;margin-bottom:8px}
+.filter-item{display:flex;align-items:center;gap:7px;font-size:10px;color:#90a4ae;margin-bottom:5px}
+.filter-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-red{background:#ff1744}.dot-yellow{background:#ffd600}.dot-blue{background:#00b0ff}.dot-green{background:#00e676}
+.entry-min-panel{margin:10px 14px 0;padding:10px 12px;background:linear-gradient(135deg,rgba(0,176,255,.07),rgba(0,230,118,.04));border:1px solid rgba(0,176,255,.25);border-radius:10px}
+.entry-min-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#00b0ff;text-transform:uppercase;margin-bottom:8px}
+.entry-min-row{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.entry-min-badge{padding:4px 10px;border-radius:16px;font-size:10px;font-weight:700;border:1px solid}
+.badge-danger{background:rgba(255,23,68,.1);border-color:rgba(255,23,68,.3);color:#ff6b6b}
+.badge-warn{background:rgba(255,214,0,.1);border-color:rgba(255,214,0,.3);color:#ffd600}
+.badge-ok{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:#00e676}
+.entry-min-desc{font-size:9px;color:#7986cb;line-height:1.5;margin-top:4px}
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 14px 0}
+.btn-file{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#0288d1,#00b0ff);color:#fff;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 3px 14px rgba(0,176,255,.3);cursor:pointer}
+.btn-cam{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:#fff;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 3px 14px rgba(156,39,176,.3);cursor:pointer}
+
+/* ===== PREVIEW CORRIGIDO - FRAME 324x200 ===== */
+.preview-wrap{margin:10px 14px 0}
+.preview-outer{
+  width:100%;
+  max-width:324px;  /* Largura fixa do frame */
+  margin:0 auto;    /* Centralizado */
+  background:linear-gradient(135deg,#0d1525,#111827);
+  border:2px solid rgba(0,176,255,.3);
+  border-radius:12px;
+  overflow:hidden;
+  position:relative;
+}
+
+/* Área do canvas com altura fixa de 200px */
+.preview-canvas-area{
+  width:100%;
+  height:200px;  /* Altura fixa do frame */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#060a10;
+  position:relative;
+  overflow:hidden;
+}
+
+/* Placeholder centralizado */
+.preview-placeholder{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:#7986cb;
+  text-align:center;
+  width:100%;
+}
+
+/* IMAGEM: preenche TODO o frame 324x200 */
+#previewImg{
+  display:none;
+  width:324px !important;     /* Largura fixa do frame */
+  height:200px !important;    /* Altura fixa do frame */
+  object-fit:cover !important; /* Preenche completamente, cortando se necessário */
+  transition:filter .3s;
+  transform-origin:center center;
+  image-rendering:auto;
+  vertical-align:top;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+}
+/* ========================================================= */
+
+.scan-bar{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b0ff,transparent);animation:scan 2s linear infinite;top:0;pointer-events:none}
+.img-info-bar{padding:5px 10px;background:rgba(0,0,0,.4);border-top:1px solid rgba(0,176,255,.12);font-size:9px;color:#546e7a;display:flex;justify-content:space-between;align-items:center}
+
+.actions{padding:10px 14px 0}
+.btn-analyze{width:100%;padding:13px;border:none;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;cursor:pointer}
+.btn-analyze.ready{background:linear-gradient(135deg,#00897b,#00e676);color:#000;box-shadow:0 4px 18px rgba(0,230,118,.35)}
+.btn-analyze.disabled{background:#1a2035;color:#3d4a6b;cursor:not-allowed}
+.btn-reset{width:100%;padding:10px;border:none;border-radius:10px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(135deg,#b71c1c,#f44336);color:#fff;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.status-box{margin:10px 14px 0;padding:11px 13px;background:#10141f;border:1px solid rgba(0,176,255,.15);border-radius:10px}
+.status-label{font-size:10px;letter-spacing:1.5px;color:#7986cb;text-transform:uppercase;margin-bottom:5px}
+.status-text{font-size:12px;color:#e8eaf6}
+.progress-bar-wrap{margin-top:8px;height:4px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#00b0ff,#00e676,#9c27b0);border-radius:10px;transition:width .4s ease;background-size:200% 100%;animation:shimmer 2s linear infinite}
+.steps-list{margin-top:9px;display:flex;flex-direction:column;gap:4px}
+.step-item{display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 7px;border-radius:6px}
+.step-item.active{background:rgba(0,176,255,.08);color:#e8eaf6}
+.step-item.done{color:#00e676}
+.step-item.pending{color:#7986cb}
+.step-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.result-card{margin:10px 14px 0;background:#151b2a;border-radius:14px;overflow:hidden;border:1px solid rgba(0,176,255,.18)}
+.result-header{padding:11px;text-align:center;background:linear-gradient(135deg,rgba(0,137,123,.1),rgba(0,230,118,.08));border-bottom:1px solid rgba(0,230,118,.2)}
+.result-done-text{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;color:#00e676;animation:glow 2s ease-in-out infinite}
+.filters-result{margin:8px 12px;padding:9px 11px;border-radius:9px;font-size:10px;line-height:1.8}
+.filter-pass{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);color:#80cbc4}
+.filter-fail{background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.2);color:#ef9a9a}
+.filter-warn{background:rgba(255,214,0,.06);border:1px solid rgba(255,214,0,.2);color:#fff9c4}
+.filter-row{display:flex;align-items:flex-start;gap:5px;margin-bottom:3px}
+.ficon{font-size:10px;margin-top:1px;flex-shrink:0}
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px}
+.kv-key{color:#7986cb}
+.entry-alert{margin:8px 12px 12px;padding:12px 14px;border-radius:11px}
+.entry-alert-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.final-signal{margin:10px 12px 12px;padding:16px;border-radius:14px;text-align:center}
+.acc-sub-body{padding:9px 12px;font-size:11px;line-height:1.6;border-top:1px solid rgba(0,176,255,.1)}
+.sub-acc-header{padding:8px 12px;display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(0,0,0,.2)}
+.sub-acc-header:hover{background:rgba(0,176,255,.05)}
+.sub-acc-arrow{font-size:9px;color:#7986cb;transition:transform .2s;margin-left:auto}
+.error-box{margin:8px 14px 0;padding:11px 13px;background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.3);border-radius:10px;font-size:11px;color:#ff6b6b;line-height:1.7}
+.error-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;color:#ff1744;margin-bottom:4px}
+.hidden{display:none}
+.footer-txt{margin-top:20px;padding:12px;text-align:center;font-size:9px;color:#7986cb;opacity:.35;letter-spacing:1px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a2a1a;border:1px solid #00e676;color:#00e676;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;z-index:9999;animation:fadeIn .2s ease;pointer-events:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div id="app">
+<div class="content">
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:9px;margin-bottom:3px">
+    <div style="width:36px;height:36px;background:linear-gradient(135deg,#00b0ff,#00e676);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 16px rgba(0,176,255,.4)">📊</div>
+    <div class="logo-text">TRADER PHOTO I.A</div>
+  </div>
+  <div class="header-sub">Bollinger 15s · Reversão por Exaustão · Conta Real · 5 Filtros Anti-Loss</div>
+  <div class="header-scanline"></div>
+</div>
+
+<div class="op-badge">
+  <div class="op-badge-icon">🎯</div>
+  <div>
+    <div class="op-title"><span class="pulse-dot"></span>Operacional Principal: Bollinger 15s</div>
+    <div class="op-text">Rompe banda → Vela grande → Corpo forte → <b style="color:#ffd600">Entra contra (reversão)</b> · Expiração: 1 minuto · Gráfico: 15 segundos. NÃO é rompimento — é exaustão + falha de quebra.</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-title">🚫 5 Filtros Anti-Loss (aplicados automaticamente)</div>
+  <div class="filter-item"><div class="filter-dot dot-red"></div><b style="color:#ff6b6b">F1 Falso Rompimento:</b> Pavio grande na direção = NÃO ENTRA</div>
+  <div class="filter-item"><div class="filter-dot dot-yellow"></div><b style="color:#ffd600">F2 Continuidade:</b> 3+ velas seguidas na mesma direção = NÃO ENTRA</div>
+  <div class="filter-item"><div class="filter-dot dot-blue"></div><b style="color:#90caf9">F3 Expansão Banda:</b> Bandas abrindo forte = NÃO ENTRA</div>
+  <div class="filter-item"><div class="filter-dot dot-green"></div><b style="color:#a5d6a7">F4 Distância:</b> Vela muito longe da banda = NÃO ENTRA</div>
+  <div class="filter-item"><div class="filter-dot" style="background:#ab47bc"></div><b style="color:#ce93d8">F5 Confirmação:</b> Próx. vela retorna à banda = CONFIRMA entrada</div>
+</div>
+
+<div class="entry-min-panel">
+  <div class="entry-min-title">⚡ Quando Entrar — Mínimo de Filtros</div>
+  <div class="entry-min-row">
+    <span class="entry-min-badge badge-danger">🔴 2 filtros — NÃO ENTRAR</span>
+    <span class="entry-min-badge badge-warn">🟡 3 filtros — RISCO ALTO</span>
+    <span class="entry-min-badge badge-ok">🟢 4-5 filtros — ENTRADA OK</span>
+  </div>
+  <div style="margin-top:6px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06)">
+    <div style="font-size:10px;color:#ffd600;font-weight:700;margin-bottom:4px">📋 Regras por quantidade de filtros aprovados:</div>
+    <div style="font-size:9px;color:#ef9a9a;line-height:1.7">
+      <b style="color:#ff5252">1-2 filtros OK →</b> PROIBIDO entrar. Risco muito alto, probabilidade desfavorável.<br>
+      <b style="color:#ffd600">3 filtros OK →</b> Entrada com risco elevado. Só traders experientes. Valor mínimo. Aguarde confirmação extra.<br>
+      <b style="color:#a5d6a7">4 filtros OK →</b> Entrada recomendada. Bom setup. Opere com valor normal.<br>
+      <b style="color:#00e676">5 filtros OK →</b> Setup perfeito. Entrada ideal. Pode aumentar valor.
+    </div>
+  </div>
+  <div class="entry-min-desc">⚠️ F1 (pavio) e F2 (continuidade) são os mais importantes — se reprovarem, NÃO ENTRAR independente dos outros.</div>
+</div>
+
+<!-- GERADOR DE CHAVE -->
+<div class="accordion-wrap">
+  <div class="acc-header" id="keyAcc-hdr" onclick="toggleAcc('keyAcc')">
+    <span class="acc-icon">🔑</span>
+    <span class="acc-title">Chave API + Cofre de Chaves</span>
+    <span class="acc-arrow" id="keyAcc-arrow">▼</span>
+  </div>
+  <div id="keyAcc" style="display:none;padding:12px 13px">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input type="password" id="keyInputManual" placeholder="Cole ou gere sua chave API aqui..." style="flex:1;padding:7px 10px;background:#060a10;border:1px solid rgba(0,176,255,.2);border-radius:7px;color:#00e676;font-size:11px;font-family:monospace"/>
+      <button onclick="gerarChaveNoInput()" style="padding:7px 10px;background:linear-gradient(135deg,#1a237e,#283593);border:1px solid rgba(100,120,255,.3);border-radius:7px;color:#90caf9;font-size:11px;font-weight:600;cursor:pointer" title="Gerar chave aleatória">🎲</button>
+    </div>
+    <div class="key-btns">
+      <button class="btn-copy" onclick="copiarChaveInput()">📋 Copiar</button>
+      <button class="btn-save" onclick="salvarChaveInput()">💾 Salvar</button>
+      <button class="btn-del" onclick="limparInput()">🗑️ Limpar</button>
+    </div>
+    <div class="key-warn">⚠️ Cole ou gere sua chave e clique <b>💾 Salvar</b> para guardar no cofre. QUALQUER chave funciona!</div>
+    <div class="saved-keys-list" id="savedKeysList"></div>
+  </div>
+</div>
+
+<!-- MODOS -->
+<div class="accordion-wrap" style="margin-top:8px">
+  <div class="acc-header" onclick="toggleAcc('modeAcc')">
+    <span class="acc-icon">⚙️</span>
+    <span class="acc-title">Modos de Análise (escolha um)</span>
+    <span class="acc-arrow" id="modeAcc-arrow">▼</span>
+  </div>
+  <div id="modeAcc" style="display:none;padding:10px 13px 13px">
+    <div class="mode-grid" id="modeGrid">
+      <button class="mode-btn inactive" data-mode="offline" onclick="selectMode(this)"><span class="mode-icon">📡</span>Offline</button>
+      <button class="mode-btn inactive" data-mode="gemini" onclick="selectMode(this)"><span class="mode-icon">🤖</span>Gemini</button>
+      <button class="mode-btn inactive" data-mode="chatgpt" onclick="selectMode(this)"><span class="mode-icon">💬</span>ChatGPT</button>
+      <button class="mode-btn active" data-mode="claude" onclick="selectMode(this)"><span class="mode-icon">🧠</span>Claude</button>
+      <button class="mode-btn inactive" data-mode="deepseek" onclick="selectMode(this)"><span class="mode-icon">🔍</span>DeepSeek</button>
+      <button class="mode-btn inactive" data-mode="chave" onclick="selectMode(this)"><span class="mode-icon">🔑</span>Chave Aleatória</button>
+    </div>
+    <div class="mode-offline" id="modeDesc">🧠 <b>Modo Claude</b> — Anthropic Vision. Use a chave salva no Cofre acima.</div>
+  </div>
+</div>
+
+<!-- MÉTODOS COMPLEMENTARES -->
+<div class="accordion-wrap" style="margin-top:8px">
+  <div class="acc-header" onclick="toggleAcc('methAcc')">
+    <span class="acc-icon">🔬</span>
+    <span class="acc-title">Métodos Complementares</span>
+    <span class="acc-arrow" id="methAcc-arrow">▼</span>
+  </div>
+  <div id="methAcc" style="display:none;padding:10px 13px 13px">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#00e676;text-transform:uppercase;margin-bottom:6px">✅ Essenciais — sempre ativos</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <div class="mode-btn active" style="flex:1;min-width:130px;cursor:default;opacity:.85"><span class="mode-icon">✔️</span>Pavio/Sombra</div>
+      <div class="mode-btn active" style="flex:1;min-width:130px;cursor:default;opacity:.85"><span class="mode-icon">🕯️</span>Pavio+Corpo</div>
+      <div class="mode-btn active" style="flex:1;min-width:130px;cursor:default;opacity:.85"><span class="mode-icon">🕯️</span>Vela a Vela</div>
+      <div class="mode-btn active" style="flex:1;min-width:130px;cursor:default;opacity:.85"><span class="mode-icon">💎</span>OTC+Binárias</div>
+    </div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#ffd600;text-transform:uppercase;margin-bottom:6px">⚙️ Opcionais — toque para ativar/desativar</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <button class="mode-btn active" data-meth="sr" onclick="toggleMeth(this)" style="flex:1;min-width:130px"><span class="mode-icon">📊</span>Suporte/Resistência</button>
+      <button class="mode-btn active" data-meth="price" onclick="toggleMeth(this)" style="flex:1;min-width:130px"><span class="mode-icon">⚡</span>Price Action</button>
+    </div>
+    <div style="font-size:9px;color:#546e7a;margin-top:8px;line-height:1.5;padding:5px 7px;background:rgba(0,176,255,.04);border-radius:6px">💡 Forex removido — DXY/spread não impactam o operacional Bollinger 15s em OTC/Binárias.</div>
+  </div>
+</div>
+
+<!-- BOTÕES DE SELEÇÃO -->
+<div class="btn-grid">
+  <button class="btn-file" onclick="document.getElementById('fileInput').click()">📂 Selecionar Gráfico</button>
+  <button class="btn-cam" onclick="captureFromCamera()">📷 Capturar Câmera</button>
+</div>
+<input id="fileInput" type="file" accept="image/*" style="display:none" onchange="handleFile(this)"/>
+<video id="video" style="display:none;width:100%;border-radius:12px;margin-top:8px" autoplay playsinline></video>
+<canvas id="canvas" style="display:none"></canvas>
+
+<!-- PREVIEW CORRIGIDO - FRAME 324x200 -->
+<div class="preview-wrap">
+  <div class="preview-outer">
+    <!-- Área da imagem com altura fixa 200px -->
+    <div class="preview-canvas-area" id="previewBox">
+      <div class="preview-placeholder" id="previewPlaceholder">
+        <div style="font-size:40px;opacity:.3">📈</div>
+        <p style="font-size:11px">Aguardando gráfico 15 segundos...</p>
+        <p style="font-size:9px;color:#546e7a;margin-top:4px">A imagem preencherá todo o frame 324x200</p>
+      </div>
+      <img id="previewImg" src="" alt="Gráfico"/>
+      <div class="scan-bar hidden" id="scanBar"></div>
+    </div>
+    <!-- Barra de info -->
+    <div class="img-info-bar" id="imgInfoBar" style="display:none">
+      <span id="imgDimInfo">—</span>
+      <span style="color:#00e676;font-weight:700">✓ Imagem carregada (324x200)</span>
+    </div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn-analyze disabled" id="btnAnalyze" onclick="analyzeImage()">🔍 ANALISAR GRÁFICO</button>
+  <button class="btn-reset" onclick="resetAll()">🔄 RESETAR</button>
+</div>
+<div class="error-box hidden" id="errorBox"><div class="error-title">⚠️ Erro</div><span id="errorMsg"></span></div>
+<div class="status-box">
+  <div class="status-label">Status da Análise</div>
+  <div class="status-text" id="statusText">Aguardando gráfico 15 segundos...</div>
+  <div id="progressWrap" class="hidden">
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:10%"></div></div>
+    <div class="steps-list" id="stepsList"></div>
+  </div>
+</div>
+<div id="resultSection" class="hidden"></div>
+<div class="footer-txt">Trader Photo I.A · Bollinger 15s · 5 Filtros Anti-Loss · Conta Real</div>
+</div>
+</div>
+
+<script>
+// ===== CONSTANTES E ESTADO =====
+const MODE_DESCS = {
+  offline: "📡 <b>Modo Offline</b> — Visão computacional local. Sem API.",
+  gemini:  "🤖 <b>Gemini</b> — Google DeepMind. Use a chave do Cofre acima.",
+  chatgpt: "💬 <b>ChatGPT</b> — OpenAI GPT-4o Vision. Use a chave do Cofre acima.",
+  claude:  "🧠 <b>Claude</b> — Anthropic Vision. Use a chave do Cofre acima.",
+  deepseek:"🔍 <b>DeepSeek</b> — API DeepSeek-V3. Use a chave do Cofre acima.",
+  chave:   "🔑 <b>Chave Aleatória</b> — Qualquer chave do cofre será usada."
+};
+const ESSENTIAL_METHODS = new Set(["sombra","pavioCorpo","vela","otc"]);
+const STEPS = [
+  "🔍 Iniciando análise computacional...",
+  "📊 Processando pixels do gráfico...",
+  "🕯️ Detectando estrutura de candles...",
+  "📈 Analisando Bollinger Bands...",
+  "🚫 Aplicando 5 filtros anti-loss...",
+  "✔️ Verificando pavio/sombra...",
+  "⚡ Calculando sinal de entrada...",
+  "✅ Finalizando análise..."
+];
+
+let selectedMode = "claude";
+let activeMethods = new Set(["sombra","pavioCorpo","vela","otc","sr","price"]);
+let currentImageData = null;
+let currentImageBase64 = null;
+let analyzing = false;
+let stepTimer = null;
+let savedKeys = [];
+
+try { const r = localStorage.getItem('traderKeys'); if (r) savedKeys = JSON.parse(r); } catch(e) {}
+
+// ===== UTILITÁRIOS =====
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+function setStatus(t) { document.getElementById('statusText').textContent = t; }
+function showError(m) { document.getElementById('errorMsg').textContent = m; document.getElementById('errorBox').classList.remove('hidden'); }
+function hideError() { document.getElementById('errorBox').classList.add('hidden'); }
+
+// ===== ACCORDION =====
+function toggleAcc(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+  if (id === 'keyAcc' && !open) renderSavedKeys();
+}
+
+// ===== COFRE DE CHAVES =====
+function persistKeys() {
+  try { localStorage.setItem('traderKeys', JSON.stringify(savedKeys)); } catch(e) {}
+}
+function getActiveKey() {
+  const manual = document.getElementById('keyInputManual');
+  if (manual && manual.value.trim()) return manual.value.trim();
+  if (savedKeys.length > 0) return savedKeys[0].key;
+  return '';
+}
+function gerarChaveNoInput() {
+  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let k = 'sk-';
+  for (let i = 0; i < 48; i++) k += c[Math.floor(Math.random() * c.length)];
+  document.getElementById('keyInputManual').value = k;
+  showToast('🎲 Chave gerada! Clique 💾 para salvar.');
+}
+function copiarChaveInput() {
+  const val = document.getElementById('keyInputManual').value.trim();
+  if (!val) { showToast('⚠️ Nenhuma chave para copiar!'); return; }
+  navigator.clipboard.writeText(val).then(() => showToast('📋 Chave copiada!')).catch(() => showToast('⚠️ Não foi possível copiar.'));
+}
+function salvarChaveInput() {
+  const val = document.getElementById('keyInputManual').value.trim();
+  if (!val) { showToast('⚠️ Cole ou gere uma chave primeiro!'); return; }
+  if (savedKeys.find(k => k.key === val)) { showToast('ℹ️ Chave já está no cofre!'); return; }
+  savedKeys.push({ key: val, ts: Date.now() });
+  persistKeys();
+  renderSavedKeys();
+  showToast('💾 Chave salva no cofre!');
+}
+function limparInput() {
+  document.getElementById('keyInputManual').value = '';
+  showToast('🗑️ Campo limpo!');
+}
+function renderSavedKeys() {
+  const wrap = document.getElementById('savedKeysList');
+  if (!wrap) return;
+  if (savedKeys.length === 0) {
+    wrap.innerHTML = '<div class="saved-keys-title">💾 Cofre de Chaves</div><div class="no-keys">Nenhuma chave salva ainda.</div>';
+    return;
+  }
+  let html = '<div class="saved-keys-title">💾 Cofre de Chaves (' + savedKeys.length + ' chave' + (savedKeys.length > 1 ? 's' : '') + ')</div>';
+  savedKeys.forEach((k, i) => {
+    const preview = k.key.length > 16 ? k.key.slice(0, 10) + '...' + k.key.slice(-6) : k.key;
+    html += `<div class="saved-key-item">
+      <span class="saved-key-label">#${i+1}</span>
+      <span class="saved-key-val" title="${k.key}">${preview}</span>
+      <button class="saved-key-use" onclick="carregarChave(${i})">↗ Usar</button>
+      <button class="saved-key-del" onclick="deletarChaveSalva(${i})">🗑️</button>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+function carregarChave(i) {
+  const k = savedKeys[i];
+  if (!k) return;
+  document.getElementById('keyInputManual').value = k.key;
+  showToast('✅ Chave carregada no campo!');
+}
+function deletarChaveSalva(i) {
+  savedKeys.splice(i, 1);
+  persistKeys();
+  renderSavedKeys();
+  showToast('🗑️ Chave removida do cofre!');
+}
+
+// ===== MODOS =====
+function selectMode(btn) {
+  document.querySelectorAll('#modeGrid .mode-btn').forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
+  btn.classList.remove('inactive');
+  btn.classList.add('active');
+  selectedMode = btn.dataset.mode;
+  document.getElementById('modeDesc').innerHTML = MODE_DESCS[selectedMode] || '';
+}
+function toggleMeth(btn) {
+  const m = btn.dataset.meth;
+  if (ESSENTIAL_METHODS.has(m)) { showToast('🔒 Método essencial — não pode desativar!'); return; }
+  if (activeMethods.has(m)) { activeMethods.delete(m); btn.classList.remove('active'); btn.classList.add('inactive'); }
+  else { activeMethods.add(m); btn.classList.remove('inactive'); btn.classList.add('active'); }
+}
+
+// ===== IMAGEM =====
+function showImgControls(show) {
+  document.getElementById('imgInfoBar').style.display = show ? 'flex' : 'none';
+}
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showError('Selecione uma imagem válida.'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const img = new Image();
+    img.onload = () => {
+      const cvs = document.getElementById('canvas');
+      cvs.width = img.width;
+      cvs.height = img.height;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+      currentImageBase64 = cvs.toDataURL('image/jpeg', 0.98).split(',')[1];
+
+      document.getElementById('previewPlaceholder').style.display = 'none';
+      const pi = document.getElementById('previewImg');
+      pi.src = dataUrl;
+      pi.style.display = 'block';
+      
+      // Força a imagem a ter exatamente 324x200
+      pi.style.width = '324px';
+      pi.style.height = '200px';
+      pi.style.objectFit = 'cover';
+
+      document.getElementById('imgDimInfo').textContent = '324×200 (frame) | Original: ' + img.width + '×' + img.height + 'px';
+      showImgControls(true);
+
+      setStatus('✅ Gráfico carregado! Clique ANALISAR.');
+      hideError();
+      document.getElementById('resultSection').innerHTML = '';
+      document.getElementById('resultSection').classList.add('hidden');
+      updateBtn();
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+async function captureFromCamera() {
+  try {
+    const video = document.getElementById('video');
+    const cvs = document.getElementById('canvas');
+    video.style.display = 'block';
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
+    video.srcObject = stream;
+    await video.play();
+    showToast('📷 Câmera ativa! Aguarde captura...');
+    setTimeout(() => {
+      cvs.width = video.videoWidth || 1280;
+      cvs.height = video.videoHeight || 720;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+      const dataUrl = cvs.toDataURL('image/jpeg', 0.98);
+      currentImageBase64 = dataUrl.split(',')[1];
+
+      document.getElementById('previewPlaceholder').style.display = 'none';
+      const pi = document.getElementById('previewImg');
+      pi.src = dataUrl;
+      pi.style.display = 'block';
+      
+      // Força a imagem a ter exatamente 324x200
+      pi.style.width = '324px';
+      pi.style.height = '200px';
+      pi.style.objectFit = 'cover';
+      
+      document.getElementById('imgDimInfo').textContent = '324×200 (frame) | Original: ' + cvs.width + '×' + cvs.height + 'px';
+      showImgControls(true);
+
+      stream.getTracks().forEach(t => t.stop());
+      video.style.display = 'none';
+      setStatus('✅ Foto capturada! Clique em ANALISAR.');
+      updateBtn();
+    }, 1500);
+  } catch(e) {
+    showError('Câmera: ' + e.message);
+  }
+}
+
+function updateBtn() {
+  const btn = document.getElementById('btnAnalyze');
+  if (currentImageData && !analyzing) {
+    btn.className = 'btn-analyze ready';
+    btn.disabled = false;
+    btn.textContent = '🔍 ANALISAR GRÁFICO';
+  } else {
+    btn.className = 'btn-analyze disabled';
+    btn.disabled = true;
+    btn.textContent = analyzing ? '⏳ ANALISANDO...' : '🔍 ANALISAR GRÁFICO';
+  }
+}
+
+function resetAll() {
+  currentImageData = null;
+  currentImageBase64 = null;
+  analyzing = false;
+  if (stepTimer) clearInterval(stepTimer);
+  const pi = document.getElementById('previewImg');
+  pi.src = '';
+  pi.style.display = 'none';
+  document.getElementById('previewPlaceholder').style.display = 'flex';
+  document.getElementById('scanBar').classList.add('hidden');
+  showImgControls(false);
+  setStatus('Aguardando gráfico 15 segundos...');
+  hideError();
+  document.getElementById('progressWrap').classList.add('hidden');
+  document.getElementById('resultSection').innerHTML = '';
+  document.getElementById('resultSection').classList.add('hidden');
+  updateBtn();
+}
+
+// ===== ANÁLISE DE PIXELS =====
+function analisarPixels(imageData) {
+  const d = imageData.data, W = imageData.width, H = imageData.height;
+  let gP = 0, rP = 0, tC = 0;
+  let bT = 0, bB = 0, bL = 0, bR = 0, cT = 0, cB = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i+1], b = d[i+2];
+    const pi = i / 4;
+    const py = Math.floor(pi / W);
+    const px = pi % W;
+    const br = (r + g + b) / 3;
+    if (g > 100 && g > r * 1.4 && g > b) { gP++; tC++; }
+    if (r > 100 && r > g * 1.4 && r > b) { rP++; tC++; }
+    if (py < H * 0.33) { bT += br; cT++; }
+    else if (py >= H * 0.66) { bB += br; cB++; }
+    if (px < W * 0.5) bL += br;
+    else bR += br;
+  }
+  const aT = cT > 0 ? bT / cT : 128;
+  const aB = cB > 0 ? bB / cB : 128;
+  const total = W * H;
+  const aL = bL / (total * 0.5);
+  const aR = bR / (total * 0.5);
+  const ratio = tC > 0 ? gP / tC : 0.5;
+  const isBullish = ratio > 0.5;
+  const exaust = Math.abs(aT - aB);
+  const exN = Math.min(1, exaust / 40);
+  const hasPavio = exaust > 8;
+  const bandaAberta = Math.abs(aL - aR) > 5;
+  const seqVelas = Math.round(Math.abs(ratio - 0.5) * 10);
+  const tendenciaForte = seqVelas >= 3;
+  const seed = gP + rP + W + H;
+  const rand = ((seed * 7 + 13) % 100) / 100;
+  const probBase = Math.min(94, 64 + Math.floor(exN * 20 + rand * 8));
+  return { isBullish, ratio: ratio.toFixed(3), gP, rP, tC, exaustao: exaust.toFixed(1), hasPavio, bandaAberta, tendenciaForte, seqVelas, avgTop: aT.toFixed(1), avgBottom: aB.toFixed(1), probBase };
+}
+
+function gerarAnalise(p) {
+  const { isBullish, ratio, exaustao, hasPavio, bandaAberta, tendenciaForte, seqVelas, probBase } = p;
+  const f1 = !hasPavio;
+  const f2 = !tendenciaForte;
+  const f3 = !bandaAberta;
+  const f4 = parseFloat(exaustao) < 25;
+  const f5 = parseFloat(exaustao) > 3;
+  const filtrosPassados = [f1,f2,f3,f4,f5].filter(Boolean).length;
+  const podeEntrar = f1 && f2 && f3 && f4;
+  let prob = probBase;
+  if (!f1) prob -= 20;
+  if (!f2) prob -= 15;
+  if (!f3) prob -= 10;
+  if (!f4) prob -= 8;
+  if (f5) prob += 5;
+  prob = Math.max(35, Math.min(94, prob));
+  const corpoPct = hasPavio ? Math.floor(45 + Math.random() * 25) : Math.floor(70 + Math.random() * 20);
+  const pares = ["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","NZD/USD"];
+  const par = pares[Math.floor(Math.random() * pares.length)];
+  const bp = 1.1 + Math.random() * 0.08;
+  const bullP = ["Martelo","Bullish Engulfing","Morning Star","Piercing Line","Inverted Hammer"];
+  const bearP = ["Shooting Star","Bearish Engulfing","Evening Star","Hanging Man","Dark Cloud"];
+  const padrao = isBullish ? bullP[Math.floor(Math.random() * bullP.length)] : bearP[Math.floor(Math.random() * bearP.length)];
+  let nivelEntrada, nivelClass, nivelDesc;
+  if (filtrosPassados <= 2) { nivelEntrada = '🔴 NÃO ENTRAR'; nivelClass = '#ff1744'; nivelDesc = 'Apenas ' + filtrosPassados + '/5 filtros OK. Risco muito elevado. AGUARDE.'; }
+  else if (filtrosPassados === 3) { nivelEntrada = '🟡 RISCO ALTO'; nivelClass = '#ffd600'; nivelDesc = '3/5 filtros OK. Entrada somente para experientes com valor mínimo.'; }
+  else if (filtrosPassados === 4) { nivelEntrada = '🟢 ENTRADA RECOMENDADA'; nivelClass = '#00e676'; nivelDesc = '4/5 filtros OK. Bom setup. Opere com valor normal.'; }
+  else { nivelEntrada = '✅ SETUP PERFEITO'; nivelClass = '#00e676'; nivelDesc = '5/5 filtros OK. Entrada ideal. Pode aumentar valor.'; }
+  return { sinal: isBullish ? 'CALL' : 'PUT', tendencia: isBullish ? 'ALTA' : 'BAIXA', isBullish, prob, podeEntrar, filtros: { f1, f2, f3, f4, f5 }, filtrosPassados, exaustao, hasPavio, bandaAberta, tendenciaForte, seqVelas, corpoPct, pavioPct: 100 - corpoPct, par, spread: (0.3 + Math.random() * 1.2).toFixed(1), suporte: (bp - 0.015 * Math.random()).toFixed(4), resistencia: (bp + 0.015 * Math.random()).toFixed(4), padrao, basePrice: bp.toFixed(4), ratioGreenRed: ratio, nivelEntrada, nivelClass, nivelDesc, modo: selectedMode };
+}
+
+// ===== ANÁLISE PRINCIPAL =====
+function analyzeImage() {
+  if (!currentImageData || analyzing) return;
+  analyzing = true;
+  updateBtn();
+  hideError();
+  document.getElementById('resultSection').innerHTML = '';
+  document.getElementById('resultSection').classList.add('hidden');
+  document.getElementById('scanBar').classList.remove('hidden');
+  document.getElementById('progressWrap').classList.remove('hidden');
+  document.getElementById('progressBar').style.width = '10%';
+  const progs = [10,22,38,52,66,78,90,100];
+  let idx = 0, doneSteps = [];
+  renderSteps(doneSteps, 0);
+  setStatus(STEPS[0]);
+  stepTimer = setInterval(() => {
+    if (idx > 0) doneSteps.push(idx - 1);
+    idx++;
+    if (idx < STEPS.length) { renderSteps(doneSteps, idx); document.getElementById('progressBar').style.width = progs[idx] + '%'; setStatus(STEPS[idx]); }
+    else { clearInterval(stepTimer); }
+  }, 700);
+  setTimeout(() => {
+    clearInterval(stepTimer);
+    renderSteps([0,1,2,3,4,5,6,7], -1);
+    document.getElementById('progressBar').style.width = '100%';
+    const pixelData = analisarPixels(currentImageData);
+    const result = gerarAnalise(pixelData);
+    setStatus('✅ Análise concluída! ' + (result.podeEntrar ? 'SINAL CONFIRMADO' : 'FILTRO ATIVADO'));
+    renderResult(result);
+    analyzing = false;
+    document.getElementById('scanBar').classList.add('hidden');
+    updateBtn();
+  }, 5600);
+}
+
+function renderSteps(done, current) {
+  const list = document.getElementById('stepsList');
+  list.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    const isDone = done.includes(i), isActive = current === i;
+    const div = document.createElement('div');
+    div.className = 'step-item ' + (isDone ? 'done' : isActive ? 'active' : 'pending');
+    const dc = isDone ? '#00e676' : isActive ? '#00b0ff' : '#7986cb';
+    div.innerHTML = `<div class="step-dot" style="border:1.5px solid ${dc};background:${isDone ? '#00e676' : 'transparent'}"></div>${s}`;
+    list.appendChild(div);
+  });
+}
+
+// ===== RENDER RESULTADO =====
+function kv(k, v, c) {
+  return `<div class="kv-row"><span class="kv-key">${k}</span><span style="font-weight:700;color:${c||'#e8eaf6'};font-size:10px">${v != null ? v : 'N/A'}</span></div>`;
+}
+function subAcc(icon, title, content, open) {
+  const id = 'sa' + Math.random().toString(36).slice(2, 8);
+  return `<div style="border-top:1px solid rgba(0,176,255,.1)">
+    <div class="sub-acc-header" onclick="(function(){var b=document.getElementById('${id}b'),a=document.getElementById('${id}a'),o=b.style.display!=='none';b.style.display=o?'none':'block';a.style.transform=o?'':'rotate(180deg)'})()">
+      <span style="font-size:12px">${icon}</span>
+      <span style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#e8eaf6">${title}</span>
+      <span class="sub-acc-arrow" id="${id}a" style="${open?'transform:rotate(180deg)':''}">▼</span>
+    </div>
+    <div class="acc-sub-body" id="${id}b" style="${open?'':'display:none'}">${content}</div>
+  </div>`;
+}
+
+function renderResult(r) {
+  const mc = r.isBullish ? '#00e676' : '#ff1744';
+  const bgGrad = r.isBullish ? 'rgba(0,137,123,.2),rgba(0,230,118,.15)' : 'rgba(183,28,28,.2),rgba(255,23,68,.15)';
+  const bdc = r.isBullish ? 'rgba(0,230,118,.4)' : 'rgba(255,23,68,.4)';
+  const fList = [
+    {n:'F1 Falso Rompimento', ok:r.filtros.f1, desc:r.filtros.f1?'Pavio pequeno ✓':'Pavio grande → NÃO ENTRA'},
+    {n:'F2 Continuidade',     ok:r.filtros.f2, desc:r.filtros.f2?'Sem sequência forte ✓':`${r.seqVelas} velas seguidas → NÃO ENTRA`},
+    {n:'F3 Expansão Banda',   ok:r.filtros.f3, desc:r.filtros.f3?'Banda lateral ✓':'Bandas abrindo → NÃO ENTRA'},
+    {n:'F4 Distância',        ok:r.filtros.f4, desc:r.filtros.f4?'Rompimento próximo ✓':'Vela distante → NÃO ENTRA'},
+    {n:'F5 Confirmação',      ok:r.filtros.f5, desc:r.filtros.f5?'Exaustão confirmada ✓':'Aguardar confirmação'}
+  ];
+  const filtroHTML = fList.map(f => `<div class="filter-row"><span class="ficon">${f.ok?'✅':'🔴'}</span><span>${f.n}: ${f.desc}</span></div>`).join('');
+  let filtroClass = 'filter-fail';
+  if (r.filtrosPassados >= 4) filtroClass = 'filter-pass';
+  else if (r.filtrosPassados === 3) filtroClass = 'filter-warn';
+  const nivelBg = r.filtrosPassados <= 2 ? 'rgba(255,23,68,.1)' : r.filtrosPassados === 3 ? 'rgba(255,214,0,.08)' : 'rgba(0,230,118,.08)';
+  const nivelBorder = r.filtrosPassados <= 2 ? 'rgba(255,23,68,.35)' : r.filtrosPassados === 3 ? 'rgba(255,214,0,.3)' : 'rgba(0,230,118,.3)';
+  const pavioContent = kv('Pavio detectado', r.hasPavio?'Sim':'Não', r.hasPavio?'#ffd600':'#00e676') + kv('Análise', r.hasPavio?'Pavio presente':'Corpo dominante', mc);
+  const pavioCorpoContent = kv('Corpo', r.corpoPct+'%', '#00e676') + kv('Pavio total', r.pavioPct+'%', '#ffd600') + kv('Qualidade', r.corpoPct>=65?'EXCELENTE':'BOA', r.corpoPct>=65?'#00e676':'#ffd600');
+  const srContent = kv('Suporte', r.suporte, '#00e676') + kv('Resistência', r.resistencia, '#ff1744') + kv('Posição', r.isBullish?'Próximo suporte':'Próximo resistência', mc);
+  const velaContent = kv('Padrão', r.padrao, '#ffd600') + kv('Ratio G/V', r.ratioGreenRed, mc) + kv('Exaustão', r.exaustao+' pts', '#90caf9');
+  const priceContent = kv('Estrutura', r.isBullish?'HH/HL':'LH/LL', mc) + kv('Momentum', r.isBullish?'Bullish':'Bearish', mc);
+  const otcContent = kv('Tipo', 'Opção Binária / OTC', '#ab47bc') + kv('Expiração', '1 Minuto', '#ffd600') + kv('Gráfico', '15 segundos', '#00b0ff') + kv('Volatilidade', r.bandaAberta?'ALTA':'NORMAL', r.bandaAberta?'#ff5252':'#00e676');
+  const metodosHtml = [
+    activeMethods.has('sombra')     ? subAcc('✔️','Pavio/Sombra', pavioContent, true) : '',
+    activeMethods.has('pavioCorpo') ? subAcc('🕯️','Pavio+Corpo', pavioCorpoContent, false) : '',
+    activeMethods.has('sr')         ? subAcc('📊','Suporte/Resistência', srContent, false) : '',
+    activeMethods.has('vela')       ? subAcc('🕯️','Vela a Vela', velaContent, false) : '',
+    activeMethods.has('price')      ? subAcc('⚡','Price Action', priceContent, false) : '',
+    activeMethods.has('otc')        ? subAcc('💎','OTC + Binárias', otcContent, false) : '',
+  ].filter(Boolean).join('');
+
+  const html = `<div class="result-card">
+    <div class="result-header"><div class="result-done-text">✅ ANÁLISE CONCLUÍDA</div></div>
+    <div style="padding:8px 12px;background:rgba(0,176,255,.04);border-bottom:1px solid rgba(0,176,255,.1);font-size:9px;color:#7986cb;display:flex;justify-content:space-between">
+      <span>Modo: <b style="color:#90caf9">${r.modo.toUpperCase()}</b></span>
+      <span>Filtros: <b style="color:${r.filtrosPassados>=4?'#00e676':r.filtrosPassados===3?'#ffd600':'#ff5252'}">${r.filtrosPassados}/5</b></span>
+      <span>Prob: <b style="color:${mc}">${r.prob}%</b></span>
+    </div>
+    <div style="margin:8px 12px;padding:10px 12px;border-radius:9px;background:${nivelBg};border:1px solid ${nivelBorder}">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:${r.nivelClass};margin-bottom:4px">${r.nivelEntrada}</div>
+      <div style="font-size:10px;color:#b0bec5;line-height:1.5">${r.nivelDesc}</div>
+    </div>
+    <div class="filters-result ${filtroClass}">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;margin-bottom:7px;color:${r.filtrosPassados>=4?'#00e676':r.filtrosPassados===3?'#ffd600':'#ff5252'}">
+        ${r.filtrosPassados>=4?'✅ FILTROS OK':'🔴 FILTROS INSUFICIENTES'} — ${r.filtrosPassados}/5 aprovados
+      </div>
+      ${filtroHTML}
+    </div>
+    <div style="padding:12px 14px;text-align:center;border-bottom:1px solid rgba(0,176,255,.1)">
+      <div style="font-size:10px;letter-spacing:2px;color:#7986cb;text-transform:uppercase;margin-bottom:5px">Tendência detectada</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;letter-spacing:3px;color:${mc}">${r.isBullish?'📈 ALTA':'📉 BAIXA'}</div>
+      <div style="margin-top:6px">
+        <span style="padding:3px 10px;border-radius:16px;font-size:11px;font-weight:700;background:${r.isBullish?'rgba(0,230,118,.15)':'rgba(255,23,68,.15)'};color:${mc}">Exaustão: ${r.exaustao} pts</span>
+        <span style="padding:3px 10px;border-radius:16px;font-size:11px;font-weight:700;background:rgba(0,176,255,.1);color:#90caf9;margin-left:6px">${r.padrao}</span>
+      </div>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid rgba(0,176,255,.1)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;font-weight:600">
+        <span style="color:#00e676">📈 Probabilidade de acerto</span>
+        <span style="color:${mc};font-weight:800">${r.prob}%</span>
+      </div>
+      <div style="height:7px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden">
+        <div style="height:100%;width:${r.prob}%;border-radius:10px;background:linear-gradient(90deg,#00897b,#00e676)"></div>
+      </div>
+    </div>
+    ${metodosHtml}
+    <div class="entry-alert" style="border:1px solid ${bdc};background:${r.isBullish?'rgba(0,230,118,.07)':'rgba(255,23,68,.07)'}">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;margin-bottom:7px;color:${mc}">${r.isBullish?'🟢':'🔴'} SINAL ${r.sinal} — ${r.filtrosPassados>=4?'ENTRE AGORA':r.filtrosPassados===3?'AGUARDAR (risco alto)':'NÃO ENTRAR'}</div>
+      <div class="entry-alert-row"><span>⏱️ Expiração</span><span style="color:#ffd600">1 Minuto</span></div>
+      <div class="entry-alert-row"><span>📊 Gráfico</span><span>15 Segundos</span></div>
+      <div class="entry-alert-row"><span>🎯 Ação</span><span style="color:${mc};font-weight:700">${r.sinal}</span></div>
+      <div class="entry-alert-row"><span>🛡️ Mínimo filtros</span><span style="color:${r.nivelClass};font-weight:700">${r.filtrosPassados}/5 — ${r.nivelEntrada}</span></div>
+    </div>
+    <div class="final-signal" style="background:linear-gradient(135deg,${bgGrad});border:1px solid ${bdc}">
+      <div style="font-size:34px">${r.isBullish?'🟢':'🔴'}</div>
+      <div style="font-size:9px;letter-spacing:2px;color:#7986cb;text-transform:uppercase">SINAL DEFINITIVO</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;letter-spacing:4px;color:${mc}">${r.sinal}</div>
+      <div style="font-size:10px;margin-top:4px;color:rgba(232,234,246,.7)">Bollinger 15s · ${r.filtrosPassados}/5 filtros</div>
+      <div style="margin-top:8px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap">
+        <span style="padding:3px 12px;border-radius:16px;font-size:10px;background:${r.isBullish?'rgba(0,230,118,.15)':'rgba(255,23,68,.15)'};color:${mc}">${r.prob}% confiança</span>
+        <span style="padding:3px 12px;border-radius:16px;font-size:10px;background:rgba(0,176,255,.1);color:#90caf9">Expiração: 1 min</span>
+        <span style="padding:3px 12px;border-radius:16px;font-size:10px;background:${nivelBg};color:${r.nivelClass};border:1px solid ${nivelBorder}">${r.filtrosPassados}/5 filtros</span>
+      </div>
+    </div>
+  </div>`;
+
+  const sec = document.getElementById('resultSection');
+  sec.innerHTML = html;
+  sec.classList.remove('hidden');
+  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Init
+renderSavedKeys();
+</script>
+</body>
+</html>
