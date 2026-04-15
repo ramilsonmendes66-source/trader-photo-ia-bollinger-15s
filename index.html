@@ -18,7 +18,10 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 @keyframes scan{0%{top:0}100%{top:100%}}
 @keyframes scanline{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes camPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,.5)}70%{box-shadow:0 0 0 10px rgba(255,23,68,0)}}
+@keyframes camPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,.6)}70%{box-shadow:0 0 0 14px rgba(255,23,68,0)}}
+@keyframes shutterPop{0%{transform:scale(1)}30%{transform:scale(.88)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes flashAnim{0%{opacity:0}15%{opacity:.95}100%{opacity:0}}
+@keyframes orientBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 
 .header{background:linear-gradient(135deg,#0d1525,#111827);border-bottom:1px solid rgba(0,176,255,.18);padding:16px 20px 12px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
 .header-scanline{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b0ff,#00e676,#00b0ff,transparent);animation:scanline 3s linear infinite}
@@ -71,11 +74,13 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 .badge-warn{background:rgba(255,214,0,.1);border-color:rgba(255,214,0,.3);color:#ffd600}
 .badge-ok{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:#00e676}
 .entry-min-desc{font-size:9px;color:#7986cb;line-height:1.5;margin-top:4px}
+
+/* ===== BOTÕES PRINCIPAIS ===== */
 .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 14px 0}
 .btn-file{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#0288d1,#00b0ff);color:#fff;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 3px 14px rgba(0,176,255,.3);cursor:pointer}
 .btn-cam{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:#fff;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 3px 14px rgba(156,39,176,.3);cursor:pointer}
 
-/* ===== CÂMERA MANUAL ===== */
+/* ===== CÂMERA OVERLAY FULLSCREEN ===== */
 #cameraOverlay{
   display:none;
   position:fixed;
@@ -83,140 +88,145 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
   background:#000;
   z-index:9000;
   flex-direction:column;
-  align-items:center;
-  justify-content:center;
 }
 #cameraOverlay.visible{display:flex}
+
+/* Barra superior */
+.cam-top-bar{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 18px 10px;
+  background:linear-gradient(180deg,rgba(0,0,0,.92),transparent);
+  z-index:10;
+  flex-shrink:0;
+}
+.cam-title{
+  font-family:'Rajdhani',sans-serif;
+  font-size:15px;font-weight:700;
+  letter-spacing:2px;color:#00e676;
+  text-transform:uppercase;
+}
+.cam-close{
+  width:38px;height:38px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.25);
+  background:rgba(0,0,0,.55);
+  color:#fff;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+
+/* Área do vídeo — cresce para preencher */
 .cam-video-wrap{
   position:relative;
-  width:100%;
-  max-width:520px;
   flex:1;
+  overflow:hidden;
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
+  background:#000;
 }
 #camVideo{
   width:100%;
   height:100%;
   object-fit:cover;
+  display:block;
 }
+
 /* Grade de enquadramento */
-.cam-grid{
+.cam-grid{position:absolute;inset:0;pointer-events:none}
+.cam-grid-line-h{position:absolute;left:0;right:0;height:1px;background:rgba(0,230,118,.2)}
+.cam-grid-line-v{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,230,118,.2)}
+.cam-corner{position:absolute;width:30px;height:30px;border-color:#00e676;border-style:solid;opacity:.9}
+.cam-corner.tl{top:18px;left:18px;border-width:3px 0 0 3px}
+.cam-corner.tr{top:18px;right:18px;border-width:3px 3px 0 0}
+.cam-corner.bl{bottom:18px;left:18px;border-width:0 0 3px 3px}
+.cam-corner.br{bottom:18px;right:18px;border-width:0 3px 3px 0}
+
+/* Indicador de orientação */
+.cam-orient-badge{
   position:absolute;
-  inset:0;
-  pointer-events:none;
+  top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.6);border:1px solid rgba(0,230,118,.35);
+  border-radius:20px;padding:4px 14px;
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+  color:#00e676;letter-spacing:1px;text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+  animation:orientBounce 2s ease-in-out infinite;
 }
-.cam-grid-line-h{
-  position:absolute;
-  left:0;right:0;
-  height:1px;
-  background:rgba(0,230,118,.25);
-}
-.cam-grid-line-v{
-  position:absolute;
-  top:0;bottom:0;
-  width:1px;
-  background:rgba(0,230,118,.25);
-}
-/* Cantos de enquadramento */
-.cam-corner{
-  position:absolute;
-  width:28px;height:28px;
-  border-color:#00e676;
-  border-style:solid;
-  opacity:.85;
-}
-.cam-corner.tl{top:16px;left:16px;border-width:3px 0 0 3px}
-.cam-corner.tr{top:16px;right:16px;border-width:3px 3px 0 0}
-.cam-corner.bl{bottom:16px;left:16px;border-width:0 0 3px 3px}
-.cam-corner.br{bottom:16px;right:16px;border-width:0 3px 3px 0}
-/* Barra superior da câmera */
-.cam-top-bar{
-  width:100%;
-  max-width:520px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:14px 16px 10px;
-  background:linear-gradient(180deg,rgba(0,0,0,.9),transparent);
-  position:relative;
-  z-index:2;
-}
-.cam-title{
-  font-family:'Rajdhani',sans-serif;
-  font-size:14px;
-  font-weight:700;
-  letter-spacing:2px;
-  color:#00e676;
-  text-transform:uppercase;
-}
-.cam-close{
-  width:36px;height:36px;
-  border-radius:50%;
-  border:1px solid rgba(255,255,255,.2);
-  background:rgba(0,0,0,.5);
-  color:#fff;
-  font-size:18px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-}
-/* Barra inferior da câmera */
+.orient-icon{font-size:14px}
+
+/* Barra inferior com botões */
 .cam-bottom-bar{
   width:100%;
-  max-width:520px;
-  padding:16px 24px 28px;
+  padding:16px 24px 30px;
   background:linear-gradient(0deg,rgba(0,0,0,.95),transparent);
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:space-between;
+  flex-shrink:0;
+  gap:16px;
+}
+.cam-hint{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.8px;line-height:1.5;flex:1;text-align:left}
+
+/* BOTÃO DISPARADOR — redesenhado */
+.btn-shutter-wrap{
+  display:flex;
   flex-direction:column;
-  gap:10px;
+  align-items:center;
+  gap:6px;
 }
-.cam-hint{
-  font-size:11px;
-  color:rgba(255,255,255,.55);
-  letter-spacing:1px;
-  text-align:center;
-}
-/* BOTÃO DISPARADOR */
 .btn-shutter{
-  width:72px;height:72px;
-  border-radius:50%;
-  border:4px solid #fff;
+  width:78px;height:78px;border-radius:50%;
+  border:4px solid rgba(255,255,255,.9);
   background:transparent;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;
-  transition:transform .1s, box-shadow .15s;
   position:relative;
+  transition:border-color .15s;
+  -webkit-tap-highlight-color:transparent;
 }
-.btn-shutter:active{
-  transform:scale(.92);
-}
+.btn-shutter:active{border-color:#ff1744}
 .btn-shutter-inner{
-  width:54px;height:54px;
-  border-radius:50%;
+  width:60px;height:60px;border-radius:50%;
   background:#fff;
-  transition:background .1s, transform .1s;
-  animation:camPulse 2s infinite;
+  transition:background .12s,transform .12s;
+  animation:camPulse 2.2s infinite;
 }
 .btn-shutter:active .btn-shutter-inner{
   background:#ff1744;
-  transform:scale(.85);
+  transform:scale(.82);
+  animation:none;
 }
-/* Flash effect */
+.btn-shutter-label{
+  font-family:'Rajdhani',sans-serif;
+  font-size:10px;font-weight:700;
+  color:rgba(255,255,255,.6);
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+
+/* Botão trocar câmera */
+.btn-flip{
+  width:46px;height:46px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);
+  color:#fff;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.btn-flip:active{background:rgba(255,255,255,.18)}
+
+/* Flash overlay */
 #flashOverlay{
   position:fixed;inset:0;
-  background:#fff;
-  opacity:0;
-  pointer-events:none;
-  z-index:9999;
-  transition:opacity .08s;
+  background:#fff;opacity:0;
+  pointer-events:none;z-index:9999;
+  transition:opacity .06s;
 }
-#flashOverlay.flash{opacity:1}
+#flashOverlay.flash{animation:flashAnim .45s ease forwards}
 
-/* ===== PREVIEW MELHORADO ===== */
+/* ===== PREVIEW ===== */
 .preview-wrap{margin:10px 14px 0}
 .preview-outer{width:100%;background:linear-gradient(135deg,#0d1525,#111827);border:2px solid rgba(0,176,255,.3);border-radius:12px;overflow:hidden;position:relative}
 .img-toolbar{display:flex;align-items:center;gap:6px;padding:7px 10px;background:rgba(0,0,0,.55);border-bottom:1px solid rgba(0,176,255,.18);flex-wrap:wrap}
@@ -227,21 +237,8 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 .img-zoom-label{font-size:10px;color:#7986cb;font-family:'Rajdhani',sans-serif;white-space:nowrap}
 .preview-canvas-area{width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#060a10;min-height:200px;position:relative;cursor:grab}
 .preview-canvas-area:active{cursor:grabbing}
-#previewImg{
-  display:none;
-  max-width:100%;
-  max-height:100%;
-  width:100%;
-  height:auto;
-  object-fit:contain;
-  transition:filter .3s,transform .3s;
-  transform-origin:center center;
-  image-rendering:auto;
-}
-#previewImg.sharp-on{
-  filter:contrast(1.18) saturate(1.2) brightness(1.04);
-  image-rendering:crisp-edges;
-}
+#previewImg{display:none;max-width:100%;max-height:100%;width:100%;height:auto;object-fit:contain;transition:filter .3s,transform .3s;transform-origin:center center;image-rendering:auto}
+#previewImg.sharp-on{filter:contrast(1.18) saturate(1.2) brightness(1.04);image-rendering:crisp-edges}
 .preview-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:#7986cb;padding:40px 0}
 .scan-bar{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b0ff,transparent);animation:scan 2s linear infinite;top:0;pointer-events:none}
 .img-info-bar{padding:5px 10px;background:rgba(0,0,0,.4);border-top:1px solid rgba(0,176,255,.12);font-size:9px;color:#546e7a;display:flex;justify-content:space-between;align-items:center}
@@ -290,16 +287,18 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 <body>
 <div class="bg-glow"></div>
 
-<!-- ===== OVERLAY DA CÂMERA MANUAL ===== -->
+<!-- ===== OVERLAY DA CÂMERA ===== -->
 <div id="cameraOverlay">
   <div id="flashOverlay"></div>
+
   <div class="cam-top-bar">
-    <div class="cam-title">📷 Enquadre o Gráfico</div>
-    <button class="cam-close" onclick="fecharCamera()" title="Fechar câmera">✕</button>
+    <div class="cam-title">📷 Capturar Gráfico</div>
+    <button class="cam-close" onclick="fecharCamera()">✕</button>
   </div>
+
   <div class="cam-video-wrap">
     <video id="camVideo" autoplay playsinline muted></video>
-    <!-- Grade de enquadramento -->
+    <!-- Grade -->
     <div class="cam-grid">
       <div class="cam-grid-line-h" style="top:33.3%"></div>
       <div class="cam-grid-line-h" style="top:66.6%"></div>
@@ -310,15 +309,35 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
       <div class="cam-corner bl"></div>
       <div class="cam-corner br"></div>
     </div>
+    <!-- Indicador de orientação -->
+    <div class="cam-orient-badge" id="orientBadge">
+      <span class="orient-icon" id="orientIcon">📱</span>
+      <span id="orientText">VERTICAL</span>
+    </div>
   </div>
+
   <div class="cam-bottom-bar">
-    <div class="cam-hint">Enquadre o gráfico e pressione o botão</div>
-    <button class="btn-shutter" id="btnShutter" onclick="dispararFoto()" title="Tirar foto">
-      <div class="btn-shutter-inner"></div>
-    </button>
+    <!-- Dica à esquerda -->
+    <div class="cam-hint">
+      Enquadre o gráfico<br>e pressione o botão
+    </div>
+
+    <!-- Botão disparador central -->
+    <div class="btn-shutter-wrap">
+      <button class="btn-shutter" id="btnShutter" onclick="dispararFoto()" title="Bater foto">
+        <div class="btn-shutter-inner"></div>
+      </button>
+      <span class="btn-shutter-label">Bater Foto</span>
+    </div>
+
+    <!-- Botão trocar câmera à direita -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:46px">
+      <button class="btn-flip" onclick="trocarCamera()" title="Trocar câmera">🔄</button>
+      <span style="font-size:9px;color:rgba(255,255,255,.4);font-family:'Rajdhani',sans-serif;letter-spacing:1px">TROCAR</span>
+    </div>
   </div>
 </div>
-<!-- ===================================== -->
+<!-- =============================== -->
 
 <div id="app">
 <div class="content">
@@ -378,7 +397,7 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
   <div id="keyAcc" style="display:none;padding:12px 13px">
     <div style="display:flex;gap:6px;margin-bottom:8px">
       <input type="password" id="keyInputManual" placeholder="Cole ou gere sua chave API aqui..." style="flex:1;padding:7px 10px;background:#060a10;border:1px solid rgba(0,176,255,.2);border-radius:7px;color:#00e676;font-size:11px;font-family:monospace"/>
-      <button onclick="gerarChaveNoInput()" style="padding:7px 10px;background:linear-gradient(135deg,#1a237e,#283593);border:1px solid rgba(100,120,255,.3);border-radius:7px;color:#90caf9;font-size:11px;font-weight:600;cursor:pointer" title="Gerar chave aleatória">🎲</button>
+      <button onclick="gerarChaveNoInput()" style="padding:7px 10px;background:linear-gradient(135deg,#1a237e,#283593);border:1px solid rgba(100,120,255,.3);border-radius:7px;color:#90caf9;font-size:11px;font-weight:600;cursor:pointer">🎲</button>
     </div>
     <div class="key-btns">
       <button class="btn-copy" onclick="copiarChaveInput()">📋 Copiar</button>
@@ -437,24 +456,24 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 <!-- BOTÕES DE SELEÇÃO -->
 <div class="btn-grid">
   <button class="btn-file" onclick="document.getElementById('fileInput').click()">📂 Selecionar Gráfico</button>
-  <button class="btn-cam" onclick="abrirCamera()">📷 Capturar Câmera</button>
+  <button class="btn-cam" onclick="abrirCamera()">📷 Abrir Câmera</button>
 </div>
 <input id="fileInput" type="file" accept="image/*" style="display:none" onchange="handleFile(this)"/>
 <canvas id="canvas" style="display:none"></canvas>
 
-<!-- PREVIEW MELHORADO -->
+<!-- PREVIEW -->
 <div class="preview-wrap">
   <div class="preview-outer">
     <div class="img-toolbar" id="imgToolbar" style="display:none">
-      <button class="img-tool-btn" onclick="rotateImage(-90)" title="Girar esquerda">↺ -90°</button>
-      <button class="img-tool-btn" onclick="rotateImage(90)" title="Girar direita">↻ +90°</button>
+      <button class="img-tool-btn" onclick="rotateImage(-90)">↺ -90°</button>
+      <button class="img-tool-btn" onclick="rotateImage(90)">↻ +90°</button>
       <div class="img-tool-sep"></div>
-      <button class="img-tool-btn" onclick="zoomImg(-0.15)" title="Diminuir zoom">🔍-</button>
+      <button class="img-tool-btn" onclick="zoomImg(-0.15)">🔍-</button>
       <span class="img-zoom-label" id="zoomLabel">100%</span>
-      <button class="img-tool-btn" onclick="zoomImg(0.15)" title="Aumentar zoom">🔍+</button>
-      <button class="img-tool-btn" onclick="resetZoom()" title="Reset">⊡</button>
+      <button class="img-tool-btn" onclick="zoomImg(0.15)">🔍+</button>
+      <button class="img-tool-btn" onclick="resetZoom()">⊡</button>
       <div class="img-tool-sep"></div>
-      <button class="img-tool-btn" id="sharpBtn" onclick="toggleSharp()" title="Nitidez">✨ Nítido</button>
+      <button class="img-tool-btn" id="sharpBtn" onclick="toggleSharp()">✨ Nítido</button>
     </div>
     <div class="preview-canvas-area" id="previewBox">
       <div class="preview-placeholder" id="previewPlaceholder">
@@ -492,14 +511,14 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 </div>
 
 <script>
-// ===== CONSTANTES E ESTADO =====
+// ===== CONSTANTES =====
 const MODE_DESCS = {
-  offline: "📡 <b>Modo Offline</b> — Visão computacional local. Sem API.",
-  gemini:  "🤖 <b>Gemini</b> — Google DeepMind. Use a chave do Cofre acima.",
-  chatgpt: "💬 <b>ChatGPT</b> — OpenAI GPT-4o Vision. Use a chave do Cofre acima.",
-  claude:  "🧠 <b>Claude</b> — Anthropic Vision. Use a chave do Cofre acima.",
+  offline:"📡 <b>Modo Offline</b> — Visão computacional local. Sem API.",
+  gemini:"🤖 <b>Gemini</b> — Google DeepMind. Use a chave do Cofre acima.",
+  chatgpt:"💬 <b>ChatGPT</b> — OpenAI GPT-4o Vision. Use a chave do Cofre acima.",
+  claude:"🧠 <b>Claude</b> — Anthropic Vision. Use a chave do Cofre acima.",
   deepseek:"🔍 <b>DeepSeek</b> — API DeepSeek-V3. Use a chave do Cofre acima.",
-  chave:   "🔑 <b>Chave Aleatória</b> — Qualquer chave do cofre será usada."
+  chave:"🔑 <b>Chave Aleatória</b> — Qualquer chave do cofre será usada."
 };
 const ESSENTIAL_METHODS = new Set(["sombra","pavioCorpo","vela","otc"]);
 const STEPS = [
@@ -520,152 +539,192 @@ let currentImageBase64 = null;
 let analyzing = false;
 let stepTimer = null;
 let savedKeys = [];
-
-// Estado imagem
-let imgRotation = 0;
-let imgZoom = 1.0;
-let sharpMode = true;
-
-// Estado câmera
+let imgRotation = 0, imgZoom = 1.0, sharpMode = true;
 let cameraStream = null;
+let facingMode = 'environment';
+let orientObserver = null;
 
-try { const r = localStorage.getItem('traderKeys'); if (r) savedKeys = JSON.parse(r); } catch(e) {}
+try { const r = localStorage.getItem('traderKeys'); if(r) savedKeys = JSON.parse(r); } catch(e){}
 
-// ===== ÁUDIO DE CLIQUE (disparo) =====
-function tocarSomClick() {
+// ===== SOM DE DISPARO — obturador mecânico realista =====
+function tocarSomDisparo() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // Som mecânico de obturador: dois cliques rápidos
-    function clique(offset, freq, dur) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + offset);
-      osc.frequency.exponentialRampToValueAtTime(freq * 0.3, ctx.currentTime + offset + dur);
-      gain.gain.setValueAtTime(0.6, ctx.currentTime + offset);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + dur);
-      osc.start(ctx.currentTime + offset);
-      osc.stop(ctx.currentTime + offset + dur + 0.01);
+    function mkOsc(freq, gainVal, startT, dur, type) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = type || 'square';
+      o.frequency.setValueAtTime(freq, ctx.currentTime + startT);
+      o.frequency.exponentialRampToValueAtTime(freq * 0.25, ctx.currentTime + startT + dur);
+      g.gain.setValueAtTime(gainVal, ctx.currentTime + startT);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startT + dur);
+      o.start(ctx.currentTime + startT);
+      o.stop(ctx.currentTime + startT + dur + 0.02);
     }
 
-    // Ruído branco curto (mecânico)
-    function ruido(offset, dur) {
+    function mkNoise(gainVal, startT, dur) {
       const bufSize = Math.floor(ctx.sampleRate * dur);
       const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
       const data = buf.getChannelData(0);
-      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.35;
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.4;
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      const gain = ctx.createGain();
-      src.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.7, ctx.currentTime + offset);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + dur);
-      src.start(ctx.currentTime + offset);
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 800;
+      const g = ctx.createGain();
+      src.connect(hp); hp.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(gainVal, ctx.currentTime + startT);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startT + dur);
+      src.start(ctx.currentTime + startT);
     }
 
-    // 1° clique (abertura)
-    clique(0, 1200, 0.04);
-    ruido(0, 0.045);
-    // 2° clique (fechamento)
-    clique(0.06, 900, 0.035);
-    ruido(0.06, 0.038);
+    // Clique de abertura do espelho
+    mkOsc(1400, 0.7, 0,    0.035, 'square');
+    mkNoise(0.8,    0,    0.040);
+    // Clique de fechamento do obturador
+    mkOsc(1100, 0.55, 0.055, 0.030, 'square');
+    mkNoise(0.65, 0.055, 0.035);
+    // Eco suave de fechamento
+    mkOsc(700,  0.25, 0.095, 0.025, 'sawtooth');
+    mkNoise(0.3,  0.095, 0.028);
 
-    // Fecha contexto após uso
-    setTimeout(() => { try { ctx.close(); } catch(e){} }, 500);
-  } catch(e) {
-    console.warn('Áudio não disponível:', e);
-  }
+    setTimeout(() => { try { ctx.close(); } catch(e){} }, 800);
+  } catch(e) { console.warn('Áudio indisponível:', e); }
 }
 
-// ===== EFEITO FLASH VISUAL =====
+// ===== FLASH VISUAL =====
 function flashVisual() {
   const el = document.getElementById('flashOverlay');
+  el.style.animation = 'none';
+  el.offsetHeight; // reflow
+  el.style.animation = '';
   el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 120);
+  setTimeout(() => el.classList.remove('flash'), 500);
 }
 
-// ===== CÂMERA MANUAL =====
+// ===== INDICADOR DE ORIENTAÇÃO =====
+function atualizarOrientacao() {
+  const badge = document.getElementById('orientBadge');
+  const icon  = document.getElementById('orientIcon');
+  const txt   = document.getElementById('orientText');
+  if (!badge) return;
+  const isLandscape = window.innerWidth > window.innerHeight;
+  icon.textContent = isLandscape ? '📺' : '📱';
+  txt.textContent  = isLandscape ? 'HORIZONTAL' : 'VERTICAL';
+}
+
+// ===== CÂMERA =====
 async function abrirCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+
+    const constraints = {
+      video: {
+        facingMode: facingMode,
+        width:  { ideal: 1920 },
+        height: { ideal: 1080 }
+      }
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     cameraStream = stream;
+
     const video = document.getElementById('camVideo');
     video.srcObject = stream;
     await video.play();
-    const overlay = document.getElementById('cameraOverlay');
-    overlay.classList.add('visible');
-    showToast('📷 Enquadre o gráfico e pressione o botão!');
+
+    document.getElementById('cameraOverlay').classList.add('visible');
+    atualizarOrientacao();
+
+    // Observa redimensionamento (rotação do celular)
+    orientObserver = () => atualizarOrientacao();
+    window.addEventListener('resize', orientObserver);
+
+    showToast('📷 Enquadre o gráfico — use vertical ou horizontal!');
   } catch(e) {
-    showError('Câmera: ' + e.message);
+    showError('Câmera: ' + (e.message || 'Acesso negado. Verifique as permissões.'));
   }
 }
 
-function fecharCamera() {
+async function trocarCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
   if (cameraStream) {
     cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null;
   }
+  await abrirCamera();
+  showToast(facingMode === 'user' ? '🤳 Câmera frontal' : '📷 Câmera traseira');
+}
+
+function fecharCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
   const video = document.getElementById('camVideo');
   video.srcObject = null;
   document.getElementById('cameraOverlay').classList.remove('visible');
+  if (orientObserver) { window.removeEventListener('resize', orientObserver); orientObserver = null; }
 }
 
 function dispararFoto() {
   const video = document.getElementById('camVideo');
   if (!video.videoWidth) { showToast('⚠️ Câmera ainda carregando...'); return; }
 
-  // Áudio + flash
-  tocarSomClick();
+  // 1. Som de disparo
+  tocarSomDisparo();
+  // 2. Flash visual
   flashVisual();
+  // 3. Animação do botão
+  const btn = document.getElementById('btnShutter');
+  btn.style.animation = 'shutterPop .3s ease';
+  setTimeout(() => { btn.style.animation = ''; }, 320);
 
-  // Captura do frame
+  // 4. Captura do frame respeitando orientação real do vídeo
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
   const cvs = document.getElementById('canvas');
-  cvs.width = video.videoWidth;
-  cvs.height = video.videoHeight;
+  cvs.width  = vw;
+  cvs.height = vh;
   const ctx = cvs.getContext('2d');
   ctx.drawImage(video, 0, 0);
 
-  if (sharpMode) applySharpenFilter(ctx, cvs.width, cvs.height);
+  if (sharpMode) applySharpenFilter(ctx, vw, vh);
 
-  currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
-  const dataUrl = cvs.toDataURL('image/jpeg', 0.98);
-  currentImageBase64 = dataUrl.split(',')[1];
+  currentImageData   = ctx.getImageData(0, 0, vw, vh);
+  currentImageBase64 = cvs.toDataURL('image/jpeg', 0.98).split(',')[1];
 
   imgRotation = 0; imgZoom = 1.0;
 
   // Exibe preview
   document.getElementById('previewPlaceholder').style.display = 'none';
   const pi = document.getElementById('previewImg');
-  pi.src = dataUrl;
+  pi.src = cvs.toDataURL('image/jpeg', 0.98);
   pi.style.display = 'block';
-  if (sharpMode) { pi.classList.add('sharp-on'); }
+  if (sharpMode) {
+    pi.classList.add('sharp-on');
+    document.getElementById('sharpBtn').classList.add('active-sharp');
+    document.getElementById('sharpBtn').textContent = '✨ Nítido ON';
+  }
   applyImgTransform();
-  document.getElementById('imgDimInfo').textContent = cvs.width + '×' + cvs.height + 'px';
+  document.getElementById('imgDimInfo').textContent = vw + '×' + vh + 'px';
   showImgControls(true);
-
   setStatus('✅ Foto capturada! Clique em ANALISAR.');
   hideError();
+  document.getElementById('resultSection').innerHTML = '';
+  document.getElementById('resultSection').classList.add('hidden');
   updateBtn();
 
-  // Fecha câmera após 250ms (para ver o flash)
-  setTimeout(() => fecharCamera(), 250);
+  showToast('📸 Foto capturada! Feche a câmera para analisar.');
 
-  showToast('📸 Foto capturada com sucesso!');
+  // Fecha câmera após flash
+  setTimeout(() => fecharCamera(), 400);
 }
 
 // ===== UTILITÁRIOS =====
 function showToast(msg) {
   const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
+  t.className = 'toast'; t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2400);
+  setTimeout(() => t.remove(), 2600);
 }
 function setStatus(t) { document.getElementById('statusText').textContent = t; }
 function showError(m) { document.getElementById('errorMsg').textContent = m; document.getElementById('errorBox').classList.remove('hidden'); }
@@ -678,51 +737,19 @@ function applyImgTransform() {
   document.getElementById('zoomLabel').textContent = pct + '%';
   document.getElementById('imgRotInfo').textContent = 'Rot: ' + (imgRotation % 360) + '°';
   img.style.transform = `rotate(${imgRotation}deg) scale(${imgZoom})`;
-  if (imgRotation % 180 !== 0) {
-    img.style.width = 'auto';
-    img.style.height = '100%';
-    img.style.maxWidth = 'none';
-  } else {
-    img.style.width = '100%';
-    img.style.height = 'auto';
-    img.style.maxWidth = '100%';
-  }
+  if (imgRotation % 180 !== 0) { img.style.width='auto'; img.style.height='100%'; img.style.maxWidth='none'; }
+  else { img.style.width='100%'; img.style.height='auto'; img.style.maxWidth='100%'; }
 }
-
-function rotateImage(deg) {
-  imgRotation = (imgRotation + deg + 360) % 360;
-  applyImgTransform();
-  rebakeCanvas();
-}
-
-function zoomImg(delta) {
-  imgZoom = Math.max(0.4, Math.min(4.0, imgZoom + delta));
-  applyImgTransform();
-}
-
-function resetZoom() {
-  imgZoom = 1.0;
-  imgRotation = 0;
-  applyImgTransform();
-}
-
+function rotateImage(deg) { imgRotation = (imgRotation + deg + 360) % 360; applyImgTransform(); rebakeCanvas(); }
+function zoomImg(delta) { imgZoom = Math.max(0.4, Math.min(4.0, imgZoom + delta)); applyImgTransform(); }
+function resetZoom() { imgZoom = 1.0; imgRotation = 0; applyImgTransform(); }
 function toggleSharp() {
   sharpMode = !sharpMode;
   const img = document.getElementById('previewImg');
   const btn = document.getElementById('sharpBtn');
-  if (sharpMode) {
-    img.classList.add('sharp-on');
-    btn.classList.add('active-sharp');
-    btn.textContent = '✨ Nítido ON';
-    showToast('✨ Nitidez aumentada!');
-  } else {
-    img.classList.remove('sharp-on');
-    btn.classList.remove('active-sharp');
-    btn.textContent = '✨ Nítido';
-    showToast('Nitidez padrão');
-  }
+  if (sharpMode) { img.classList.add('sharp-on'); btn.classList.add('active-sharp'); btn.textContent='✨ Nítido ON'; showToast('✨ Nitidez aumentada!'); }
+  else { img.classList.remove('sharp-on'); btn.classList.remove('active-sharp'); btn.textContent='✨ Nítido'; showToast('Nitidez padrão'); }
 }
-
 function rebakeCanvas() {
   const img = document.getElementById('previewImg');
   if (!img.src || img.src === window.location.href) return;
@@ -731,451 +758,125 @@ function rebakeCanvas() {
   const sin = Math.abs(Math.sin(rad)), cos = Math.abs(Math.cos(rad));
   const nw = Math.round(img.naturalWidth * cos + img.naturalHeight * sin);
   const nh = Math.round(img.naturalWidth * sin + img.naturalHeight * cos);
-  cvs.width = nw;
-  cvs.height = nh;
+  cvs.width = nw; cvs.height = nh;
   const ctx = cvs.getContext('2d');
-  ctx.clearRect(0, 0, nw, nh);
-  ctx.save();
-  ctx.translate(nw / 2, nh / 2);
-  ctx.rotate(rad);
-  ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+  ctx.clearRect(0,0,nw,nh);
+  ctx.save(); ctx.translate(nw/2,nh/2); ctx.rotate(rad);
+  ctx.drawImage(img,-img.naturalWidth/2,-img.naturalHeight/2);
   ctx.restore();
-  if (sharpMode) applySharpenFilter(ctx, nw, nh);
-  currentImageData = ctx.getImageData(0, 0, nw, nh);
+  if (sharpMode) applySharpenFilter(ctx,nw,nh);
+  currentImageData = ctx.getImageData(0,0,nw,nh);
 }
-
-function applySharpenFilter(ctx, w, h) {
+function applySharpenFilter(ctx,w,h) {
   try {
-    const src = ctx.getImageData(0, 0, w, h);
-    const dst = ctx.createImageData(w, h);
-    const d = src.data, o = dst.data;
-    const kernel = [0,-1,0,-1,5,-1,0,-1,0];
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const idx = (y * w + x) * 4;
-        for (let c = 0; c < 3; c++) {
-          let val = 0;
-          for (let ky = -1; ky <= 1; ky++) {
-            for (let kx = -1; kx <= 1; kx++) {
-              const ki = (ky + 1) * 3 + (kx + 1);
-              const pi = ((y + ky) * w + (x + kx)) * 4;
-              val += d[pi + c] * kernel[ki];
-            }
-          }
-          o[idx + c] = Math.max(0, Math.min(255, val));
-        }
-        o[idx + 3] = d[idx + 3];
-      }
-    }
-    ctx.putImageData(dst, 0, 0);
-  } catch(e) {}
+    const src=ctx.getImageData(0,0,w,h); const dst=ctx.createImageData(w,h);
+    const d=src.data,o=dst.data; const kernel=[0,-1,0,-1,5,-1,0,-1,0];
+    for(let y=1;y<h-1;y++){for(let x=1;x<w-1;x++){const idx=(y*w+x)*4;for(let c=0;c<3;c++){let val=0;for(let ky=-1;ky<=1;ky++){for(let kx=-1;kx<=1;kx++){const ki=(ky+1)*3+(kx+1);const pi=((y+ky)*w+(x+kx))*4;val+=d[pi+c]*kernel[ki];}}o[idx+c]=Math.max(0,Math.min(255,val));}o[idx+3]=d[idx+3];}}
+    ctx.putImageData(dst,0,0);
+  } catch(e){}
 }
 
 // ===== ACCORDION =====
 function toggleAcc(id) {
-  const el = document.getElementById(id);
-  const arrow = document.getElementById(id + '-arrow');
-  const open = el.style.display !== 'none';
-  el.style.display = open ? 'none' : 'block';
-  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
-  if (id === 'keyAcc' && !open) renderSavedKeys();
+  const el=document.getElementById(id); const arrow=document.getElementById(id+'-arrow');
+  const open=el.style.display!=='none'; el.style.display=open?'none':'block';
+  if(arrow) arrow.style.transform=open?'':'rotate(180deg)';
+  if(id==='keyAcc'&&!open) renderSavedKeys();
 }
 
 // ===== COFRE DE CHAVES =====
-function persistKeys() {
-  try { localStorage.setItem('traderKeys', JSON.stringify(savedKeys)); } catch(e) {}
-}
-function getActiveKey() {
-  const manual = document.getElementById('keyInputManual');
-  if (manual && manual.value.trim()) return manual.value.trim();
-  if (savedKeys.length > 0) return savedKeys[0].key;
-  return '';
-}
-function gerarChaveNoInput() {
-  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let k = 'sk-';
-  for (let i = 0; i < 48; i++) k += c[Math.floor(Math.random() * c.length)];
-  document.getElementById('keyInputManual').value = k;
-  showToast('🎲 Chave gerada! Clique 💾 para salvar.');
-}
-function copiarChaveInput() {
-  const val = document.getElementById('keyInputManual').value.trim();
-  if (!val) { showToast('⚠️ Nenhuma chave para copiar!'); return; }
-  navigator.clipboard.writeText(val).then(() => showToast('📋 Chave copiada!')).catch(() => showToast('⚠️ Não foi possível copiar.'));
-}
-function salvarChaveInput() {
-  const val = document.getElementById('keyInputManual').value.trim();
-  if (!val) { showToast('⚠️ Cole ou gere uma chave primeiro!'); return; }
-  if (savedKeys.find(k => k.key === val)) { showToast('ℹ️ Chave já está no cofre!'); return; }
-  savedKeys.push({ key: val, ts: Date.now() });
-  persistKeys();
-  renderSavedKeys();
-  showToast('💾 Chave salva no cofre!');
-}
-function limparInput() {
-  document.getElementById('keyInputManual').value = '';
-  showToast('🗑️ Campo limpo!');
-}
-function renderSavedKeys() {
-  const wrap = document.getElementById('savedKeysList');
-  if (!wrap) return;
-  if (savedKeys.length === 0) {
-    wrap.innerHTML = '<div class="saved-keys-title">💾 Cofre de Chaves</div><div class="no-keys">Nenhuma chave salva ainda.</div>';
-    return;
-  }
-  let html = '<div class="saved-keys-title">💾 Cofre de Chaves (' + savedKeys.length + ' chave' + (savedKeys.length > 1 ? 's' : '') + ')</div>';
-  savedKeys.forEach((k, i) => {
-    const preview = k.key.length > 16 ? k.key.slice(0, 10) + '...' + k.key.slice(-6) : k.key;
-    html += `<div class="saved-key-item">
-      <span class="saved-key-label">#${i+1}</span>
-      <span class="saved-key-val" title="${k.key}">${preview}</span>
-      <button class="saved-key-use" onclick="carregarChave(${i})">↗ Usar</button>
-      <button class="saved-key-del" onclick="deletarChaveSalva(${i})">🗑️</button>
-    </div>`;
-  });
-  wrap.innerHTML = html;
-}
-function carregarChave(i) {
-  const k = savedKeys[i];
-  if (!k) return;
-  document.getElementById('keyInputManual').value = k.key;
-  showToast('✅ Chave carregada no campo!');
-}
-function deletarChaveSalva(i) {
-  savedKeys.splice(i, 1);
-  persistKeys();
-  renderSavedKeys();
-  showToast('🗑️ Chave removida do cofre!');
-}
+function persistKeys(){try{localStorage.setItem('traderKeys',JSON.stringify(savedKeys));}catch(e){}}
+function getActiveKey(){const m=document.getElementById('keyInputManual');if(m&&m.value.trim())return m.value.trim();if(savedKeys.length>0)return savedKeys[0].key;return '';}
+function gerarChaveNoInput(){const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';let k='sk-';for(let i=0;i<48;i++)k+=c[Math.floor(Math.random()*c.length)];document.getElementById('keyInputManual').value=k;showToast('🎲 Chave gerada! Clique 💾 para salvar.');}
+function copiarChaveInput(){const v=document.getElementById('keyInputManual').value.trim();if(!v){showToast('⚠️ Nenhuma chave para copiar!');return;}navigator.clipboard.writeText(v).then(()=>showToast('📋 Chave copiada!')).catch(()=>showToast('⚠️ Não foi possível copiar.'));}
+function salvarChaveInput(){const v=document.getElementById('keyInputManual').value.trim();if(!v){showToast('⚠️ Cole ou gere uma chave primeiro!');return;}if(savedKeys.find(k=>k.key===v)){showToast('ℹ️ Chave já está no cofre!');return;}savedKeys.push({key:v,ts:Date.now()});persistKeys();renderSavedKeys();showToast('💾 Chave salva no cofre!');}
+function limparInput(){document.getElementById('keyInputManual').value='';showToast('🗑️ Campo limpo!');}
+function renderSavedKeys(){const wrap=document.getElementById('savedKeysList');if(!wrap)return;if(savedKeys.length===0){wrap.innerHTML='<div class="saved-keys-title">💾 Cofre de Chaves</div><div class="no-keys">Nenhuma chave salva ainda.</div>';return;}let html='<div class="saved-keys-title">💾 Cofre de Chaves ('+savedKeys.length+' chave'+(savedKeys.length>1?'s':'')+')</div>';savedKeys.forEach((k,i)=>{const preview=k.key.length>16?k.key.slice(0,10)+'...'+k.key.slice(-6):k.key;html+=`<div class="saved-key-item"><span class="saved-key-label">#${i+1}</span><span class="saved-key-val" title="${k.key}">${preview}</span><button class="saved-key-use" onclick="carregarChave(${i})">↗ Usar</button><button class="saved-key-del" onclick="deletarChaveSalva(${i})">🗑️</button></div>`;});wrap.innerHTML=html;}
+function carregarChave(i){const k=savedKeys[i];if(!k)return;document.getElementById('keyInputManual').value=k.key;showToast('✅ Chave carregada no campo!');}
+function deletarChaveSalva(i){savedKeys.splice(i,1);persistKeys();renderSavedKeys();showToast('🗑️ Chave removida do cofre!');}
 
 // ===== MODOS =====
-function selectMode(btn) {
-  document.querySelectorAll('#modeGrid .mode-btn').forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
-  btn.classList.remove('inactive');
-  btn.classList.add('active');
-  selectedMode = btn.dataset.mode;
-  document.getElementById('modeDesc').innerHTML = MODE_DESCS[selectedMode] || '';
-}
-function toggleMeth(btn) {
-  const m = btn.dataset.meth;
-  if (ESSENTIAL_METHODS.has(m)) { showToast('🔒 Método essencial — não pode desativar!'); return; }
-  if (activeMethods.has(m)) { activeMethods.delete(m); btn.classList.remove('active'); btn.classList.add('inactive'); }
-  else { activeMethods.add(m); btn.classList.remove('inactive'); btn.classList.add('active'); }
-}
+function selectMode(btn){document.querySelectorAll('#modeGrid .mode-btn').forEach(b=>{b.classList.remove('active');b.classList.add('inactive');});btn.classList.remove('inactive');btn.classList.add('active');selectedMode=btn.dataset.mode;document.getElementById('modeDesc').innerHTML=MODE_DESCS[selectedMode]||'';}
+function toggleMeth(btn){const m=btn.dataset.meth;if(ESSENTIAL_METHODS.has(m)){showToast('🔒 Método essencial — não pode desativar!');return;}if(activeMethods.has(m)){activeMethods.delete(m);btn.classList.remove('active');btn.classList.add('inactive');}else{activeMethods.add(m);btn.classList.remove('inactive');btn.classList.add('active');}}
 
 // ===== IMAGEM (arquivo) =====
-function showImgControls(show) {
-  document.getElementById('imgToolbar').style.display = show ? 'flex' : 'none';
-  document.getElementById('imgInfoBar').style.display = show ? 'flex' : 'none';
+function showImgControls(show){document.getElementById('imgToolbar').style.display=show?'flex':'none';document.getElementById('imgInfoBar').style.display=show?'flex':'none';}
+function handleFile(input){
+  const file=input.files[0]; if(!file)return;
+  if(!file.type.startsWith('image/')){showError('Selecione uma imagem válida.');return;}
+  const reader=new FileReader();
+  reader.onload=(ev)=>{const dataUrl=ev.target.result;const img=new Image();img.onload=()=>{imgRotation=0;imgZoom=1.0;const cvs=document.getElementById('canvas');cvs.width=img.width;cvs.height=img.height;const ctx=cvs.getContext('2d');ctx.drawImage(img,0,0);if(sharpMode)applySharpenFilter(ctx,img.width,img.height);currentImageData=ctx.getImageData(0,0,cvs.width,cvs.height);currentImageBase64=cvs.toDataURL('image/jpeg',0.98).split(',')[1];document.getElementById('previewPlaceholder').style.display='none';const pi=document.getElementById('previewImg');pi.src=dataUrl;pi.style.display='block';if(sharpMode){pi.classList.add('sharp-on');document.getElementById('sharpBtn').classList.add('active-sharp');document.getElementById('sharpBtn').textContent='✨ Nítido ON';}applyImgTransform();document.getElementById('imgDimInfo').textContent=img.width+'×'+img.height+'px';showImgControls(true);setStatus('✅ Gráfico carregado! Use os controles e clique ANALISAR.');hideError();document.getElementById('resultSection').innerHTML='';document.getElementById('resultSection').classList.add('hidden');updateBtn();};img.src=dataUrl;};
+  reader.readAsDataURL(file); input.value='';
 }
-
-function handleFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) { showError('Selecione uma imagem válida.'); return; }
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    const img = new Image();
-    img.onload = () => {
-      imgRotation = 0;
-      imgZoom = 1.0;
-      const cvs = document.getElementById('canvas');
-      cvs.width = img.width;
-      cvs.height = img.height;
-      const ctx = cvs.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      if (sharpMode) applySharpenFilter(ctx, img.width, img.height);
-      currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
-      currentImageBase64 = cvs.toDataURL('image/jpeg', 0.98).split(',')[1];
-      document.getElementById('previewPlaceholder').style.display = 'none';
-      const pi = document.getElementById('previewImg');
-      pi.src = dataUrl;
-      pi.style.display = 'block';
-      if (sharpMode) { pi.classList.add('sharp-on'); document.getElementById('sharpBtn').classList.add('active-sharp'); document.getElementById('sharpBtn').textContent = '✨ Nítido ON'; }
-      applyImgTransform();
-      document.getElementById('imgDimInfo').textContent = img.width + '×' + img.height + 'px';
-      showImgControls(true);
-      setStatus('✅ Gráfico carregado! Use os controles e clique ANALISAR.');
-      hideError();
-      document.getElementById('resultSection').innerHTML = '';
-      document.getElementById('resultSection').classList.add('hidden');
-      updateBtn();
-    };
-    img.src = dataUrl;
-  };
-  reader.readAsDataURL(file);
-  input.value = '';
-}
-
-function updateBtn() {
-  const btn = document.getElementById('btnAnalyze');
-  if (currentImageData && !analyzing) {
-    btn.className = 'btn-analyze ready';
-    btn.disabled = false;
-    btn.textContent = '🔍 ANALISAR GRÁFICO';
-  } else {
-    btn.className = 'btn-analyze disabled';
-    btn.disabled = true;
-    btn.textContent = analyzing ? '⏳ ANALISANDO...' : '🔍 ANALISAR GRÁFICO';
-  }
-}
-
-function resetAll() {
-  currentImageData = null;
-  currentImageBase64 = null;
-  analyzing = false;
-  imgRotation = 0; imgZoom = 1.0;
-  if (stepTimer) clearInterval(stepTimer);
-  fecharCamera();
-  const pi = document.getElementById('previewImg');
-  pi.src = '';
-  pi.style.display = 'none';
-  pi.classList.remove('sharp-on');
-  pi.style.transform = '';
-  pi.style.width = '100%';
-  pi.style.height = 'auto';
-  document.getElementById('previewPlaceholder').style.display = 'flex';
-  document.getElementById('scanBar').classList.add('hidden');
-  showImgControls(false);
-  setStatus('Aguardando gráfico 15 segundos...');
-  hideError();
-  document.getElementById('progressWrap').classList.add('hidden');
-  document.getElementById('resultSection').innerHTML = '';
-  document.getElementById('resultSection').classList.add('hidden');
-  updateBtn();
-}
+function updateBtn(){const btn=document.getElementById('btnAnalyze');if(currentImageData&&!analyzing){btn.className='btn-analyze ready';btn.disabled=false;btn.textContent='🔍 ANALISAR GRÁFICO';}else{btn.className='btn-analyze disabled';btn.disabled=true;btn.textContent=analyzing?'⏳ ANALISANDO...':'🔍 ANALISAR GRÁFICO';}}
+function resetAll(){currentImageData=null;currentImageBase64=null;analyzing=false;imgRotation=0;imgZoom=1.0;if(stepTimer)clearInterval(stepTimer);fecharCamera();const pi=document.getElementById('previewImg');pi.src='';pi.style.display='none';pi.classList.remove('sharp-on');pi.style.transform='';pi.style.width='100%';pi.style.height='auto';document.getElementById('previewPlaceholder').style.display='flex';document.getElementById('scanBar').classList.add('hidden');showImgControls(false);setStatus('Aguardando gráfico 15 segundos...');hideError();document.getElementById('progressWrap').classList.add('hidden');document.getElementById('resultSection').innerHTML='';document.getElementById('resultSection').classList.add('hidden');updateBtn();}
 
 // ===== ANÁLISE DE PIXELS =====
-function analisarPixels(imageData) {
-  const d = imageData.data, W = imageData.width, H = imageData.height;
-  let gP = 0, rP = 0, tC = 0;
-  let bT = 0, bB = 0, bL = 0, bR = 0, cT = 0, cB = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i+1], b = d[i+2];
-    const pi = i / 4;
-    const py = Math.floor(pi / W);
-    const px = pi % W;
-    const br = (r + g + b) / 3;
-    if (g > 100 && g > r * 1.4 && g > b) { gP++; tC++; }
-    if (r > 100 && r > g * 1.4 && r > b) { rP++; tC++; }
-    if (py < H * 0.33) { bT += br; cT++; }
-    else if (py >= H * 0.66) { bB += br; cB++; }
-    if (px < W * 0.5) bL += br;
-    else bR += br;
-  }
-  const aT = cT > 0 ? bT / cT : 128;
-  const aB = cB > 0 ? bB / cB : 128;
-  const total = W * H;
-  const aL = bL / (total * 0.5);
-  const aR = bR / (total * 0.5);
-  const ratio = tC > 0 ? gP / tC : 0.5;
-  const isBullish = ratio > 0.5;
-  const exaust = Math.abs(aT - aB);
-  const exN = Math.min(1, exaust / 40);
-  const hasPavio = exaust > 8;
-  const bandaAberta = Math.abs(aL - aR) > 5;
-  const seqVelas = Math.round(Math.abs(ratio - 0.5) * 10);
-  const tendenciaForte = seqVelas >= 3;
-  const seed = gP + rP + W + H;
-  const rand = ((seed * 7 + 13) % 100) / 100;
-  const probBase = Math.min(94, 64 + Math.floor(exN * 20 + rand * 8));
-  return { isBullish, ratio: ratio.toFixed(3), gP, rP, tC, exaustao: exaust.toFixed(1), hasPavio, bandaAberta, tendenciaForte, seqVelas, avgTop: aT.toFixed(1), avgBottom: aB.toFixed(1), probBase };
+function analisarPixels(imageData){
+  const d=imageData.data,W=imageData.width,H=imageData.height;
+  let gP=0,rP=0,tC=0,bT=0,bB=0,bL=0,bR=0,cT=0,cB=0;
+  for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];const pi=i/4;const py=Math.floor(pi/W);const px=pi%W;const br=(r+g+b)/3;if(g>100&&g>r*1.4&&g>b){gP++;tC++;}if(r>100&&r>g*1.4&&r>b){rP++;tC++;}if(py<H*.33){bT+=br;cT++;}else if(py>=H*.66){bB+=br;cB++;}if(px<W*.5)bL+=br;else bR+=br;}
+  const aT=cT>0?bT/cT:128;const aB=cB>0?bB/cB:128;const total=W*H;const aL=bL/(total*.5);const aR=bR/(total*.5);const ratio=tC>0?gP/tC:.5;const isBullish=ratio>.5;const exaust=Math.abs(aT-aB);const exN=Math.min(1,exaust/40);const hasPavio=exaust>8;const bandaAberta=Math.abs(aL-aR)>5;const seqVelas=Math.round(Math.abs(ratio-.5)*10);const tendenciaForte=seqVelas>=3;const seed=gP+rP+W+H;const rand=((seed*7+13)%100)/100;const probBase=Math.min(94,64+Math.floor(exN*20+rand*8));
+  return{isBullish,ratio:ratio.toFixed(3),gP,rP,tC,exaustao:exaust.toFixed(1),hasPavio,bandaAberta,tendenciaForte,seqVelas,avgTop:aT.toFixed(1),avgBottom:aB.toFixed(1),probBase};
 }
-
-function gerarAnalise(p) {
-  const { isBullish, ratio, exaustao, hasPavio, bandaAberta, tendenciaForte, seqVelas, probBase } = p;
-  const f1 = !hasPavio;
-  const f2 = !tendenciaForte;
-  const f3 = !bandaAberta;
-  const f4 = parseFloat(exaustao) < 25;
-  const f5 = parseFloat(exaustao) > 3;
-  const filtrosPassados = [f1,f2,f3,f4,f5].filter(Boolean).length;
-  const podeEntrar = f1 && f2 && f3 && f4;
-  let prob = probBase;
-  if (!f1) prob -= 20;
-  if (!f2) prob -= 15;
-  if (!f3) prob -= 10;
-  if (!f4) prob -= 8;
-  if (f5) prob += 5;
-  prob = Math.max(35, Math.min(94, prob));
-  const corpoPct = hasPavio ? Math.floor(45 + Math.random() * 25) : Math.floor(70 + Math.random() * 20);
-  const pares = ["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","NZD/USD"];
-  const par = pares[Math.floor(Math.random() * pares.length)];
-  const bp = 1.1 + Math.random() * 0.08;
-  const bullP = ["Martelo","Bullish Engulfing","Morning Star","Piercing Line","Inverted Hammer"];
-  const bearP = ["Shooting Star","Bearish Engulfing","Evening Star","Hanging Man","Dark Cloud"];
-  const padrao = isBullish ? bullP[Math.floor(Math.random() * bullP.length)] : bearP[Math.floor(Math.random() * bearP.length)];
-  let nivelEntrada, nivelClass, nivelDesc;
-  if (filtrosPassados <= 2) { nivelEntrada = '🔴 NÃO ENTRAR'; nivelClass = '#ff1744'; nivelDesc = 'Apenas ' + filtrosPassados + '/5 filtros OK. Risco muito elevado. AGUARDE.'; }
-  else if (filtrosPassados === 3) { nivelEntrada = '🟡 RISCO ALTO'; nivelClass = '#ffd600'; nivelDesc = '3/5 filtros OK. Entrada somente para experientes com valor mínimo.'; }
-  else if (filtrosPassados === 4) { nivelEntrada = '🟢 ENTRADA RECOMENDADA'; nivelClass = '#00e676'; nivelDesc = '4/5 filtros OK. Bom setup. Opere com valor normal.'; }
-  else { nivelEntrada = '✅ SETUP PERFEITO'; nivelClass = '#00e676'; nivelDesc = '5/5 filtros OK. Entrada ideal. Pode aumentar valor.'; }
-  return { sinal: isBullish ? 'CALL' : 'PUT', tendencia: isBullish ? 'ALTA' : 'BAIXA', isBullish, prob, podeEntrar, filtros: { f1, f2, f3, f4, f5 }, filtrosPassados, exaustao, hasPavio, bandaAberta, tendenciaForte, seqVelas, corpoPct, pavioPct: 100 - corpoPct, par, spread: (0.3 + Math.random() * 1.2).toFixed(1), suporte: (bp - 0.015 * Math.random()).toFixed(4), resistencia: (bp + 0.015 * Math.random()).toFixed(4), padrao, basePrice: bp.toFixed(4), ratioGreenRed: ratio, nivelEntrada, nivelClass, nivelDesc, modo: selectedMode };
+function gerarAnalise(p){
+  const{isBullish,ratio,exaustao,hasPavio,bandaAberta,tendenciaForte,seqVelas,probBase}=p;
+  const f1=!hasPavio,f2=!tendenciaForte,f3=!bandaAberta,f4=parseFloat(exaustao)<25,f5=parseFloat(exaustao)>3;
+  const filtrosPassados=[f1,f2,f3,f4,f5].filter(Boolean).length;
+  const podeEntrar=f1&&f2&&f3&&f4;
+  let prob=probBase;if(!f1)prob-=20;if(!f2)prob-=15;if(!f3)prob-=10;if(!f4)prob-=8;if(f5)prob+=5;prob=Math.max(35,Math.min(94,prob));
+  const corpoPct=hasPavio?Math.floor(45+Math.random()*25):Math.floor(70+Math.random()*20);
+  const pares=["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","NZD/USD"];const par=pares[Math.floor(Math.random()*pares.length)];
+  const bp=1.1+Math.random()*.08;
+  const bullP=["Martelo","Bullish Engulfing","Morning Star","Piercing Line","Inverted Hammer"];const bearP=["Shooting Star","Bearish Engulfing","Evening Star","Hanging Man","Dark Cloud"];
+  const padrao=isBullish?bullP[Math.floor(Math.random()*bullP.length)]:bearP[Math.floor(Math.random()*bearP.length)];
+  let nivelEntrada,nivelClass,nivelDesc;
+  if(filtrosPassados<=2){nivelEntrada='🔴 NÃO ENTRAR';nivelClass='#ff1744';nivelDesc='Apenas '+filtrosPassados+'/5 filtros OK. Risco muito elevado. AGUARDE.';}
+  else if(filtrosPassados===3){nivelEntrada='🟡 RISCO ALTO';nivelClass='#ffd600';nivelDesc='3/5 filtros OK. Entrada somente para experientes com valor mínimo.';}
+  else if(filtrosPassados===4){nivelEntrada='🟢 ENTRADA RECOMENDADA';nivelClass='#00e676';nivelDesc='4/5 filtros OK. Bom setup. Opere com valor normal.';}
+  else{nivelEntrada='✅ SETUP PERFEITO';nivelClass='#00e676';nivelDesc='5/5 filtros OK. Entrada ideal. Pode aumentar valor.';}
+  return{sinal:isBullish?'CALL':'PUT',tendencia:isBullish?'ALTA':'BAIXA',isBullish,prob,podeEntrar,filtros:{f1,f2,f3,f4,f5},filtrosPassados,exaustao,hasPavio,bandaAberta,tendenciaForte,seqVelas,corpoPct,pavioPct:100-corpoPct,par,spread:(0.3+Math.random()*1.2).toFixed(1),suporte:(bp-0.015*Math.random()).toFixed(4),resistencia:(bp+0.015*Math.random()).toFixed(4),padrao,basePrice:bp.toFixed(4),ratioGreenRed:ratio,nivelEntrada,nivelClass,nivelDesc,modo:selectedMode};
 }
 
 // ===== ANÁLISE PRINCIPAL =====
-function analyzeImage() {
-  if (!currentImageData || analyzing) return;
-  rebakeCanvas();
-  analyzing = true;
-  updateBtn();
-  hideError();
-  document.getElementById('resultSection').innerHTML = '';
-  document.getElementById('resultSection').classList.add('hidden');
+function analyzeImage(){
+  if(!currentImageData||analyzing)return;
+  rebakeCanvas();analyzing=true;updateBtn();hideError();
+  document.getElementById('resultSection').innerHTML='';document.getElementById('resultSection').classList.add('hidden');
   document.getElementById('scanBar').classList.remove('hidden');
   document.getElementById('progressWrap').classList.remove('hidden');
-  document.getElementById('progressBar').style.width = '10%';
-  const progs = [10,22,38,52,66,78,90,100];
-  let idx = 0, doneSteps = [];
-  renderSteps(doneSteps, 0);
-  setStatus(STEPS[0]);
-  stepTimer = setInterval(() => {
-    if (idx > 0) doneSteps.push(idx - 1);
-    idx++;
-    if (idx < STEPS.length) { renderSteps(doneSteps, idx); document.getElementById('progressBar').style.width = progs[idx] + '%'; setStatus(STEPS[idx]); }
-    else { clearInterval(stepTimer); }
-  }, 700);
-  setTimeout(() => {
-    clearInterval(stepTimer);
-    renderSteps([0,1,2,3,4,5,6,7], -1);
-    document.getElementById('progressBar').style.width = '100%';
-    const pixelData = analisarPixels(currentImageData);
-    const result = gerarAnalise(pixelData);
-    setStatus('✅ Análise concluída! ' + (result.podeEntrar ? 'SINAL CONFIRMADO' : 'FILTRO ATIVADO'));
-    renderResult(result);
-    analyzing = false;
-    document.getElementById('scanBar').classList.add('hidden');
-    updateBtn();
-  }, 5600);
+  document.getElementById('progressBar').style.width='10%';
+  const progs=[10,22,38,52,66,78,90,100];let idx=0,doneSteps=[];
+  renderSteps(doneSteps,0);setStatus(STEPS[0]);
+  stepTimer=setInterval(()=>{if(idx>0)doneSteps.push(idx-1);idx++;if(idx<STEPS.length){renderSteps(doneSteps,idx);document.getElementById('progressBar').style.width=progs[idx]+'%';setStatus(STEPS[idx]);}else{clearInterval(stepTimer);}},700);
+  setTimeout(()=>{clearInterval(stepTimer);renderSteps([0,1,2,3,4,5,6,7],-1);document.getElementById('progressBar').style.width='100%';const pixelData=analisarPixels(currentImageData);const result=gerarAnalise(pixelData);setStatus('✅ Análise concluída! '+(result.podeEntrar?'SINAL CONFIRMADO':'FILTRO ATIVADO'));renderResult(result);analyzing=false;document.getElementById('scanBar').classList.add('hidden');updateBtn();},5600);
 }
-
-function renderSteps(done, current) {
-  const list = document.getElementById('stepsList');
-  list.innerHTML = '';
-  STEPS.forEach((s, i) => {
-    const isDone = done.includes(i), isActive = current === i;
-    const div = document.createElement('div');
-    div.className = 'step-item ' + (isDone ? 'done' : isActive ? 'active' : 'pending');
-    const dc = isDone ? '#00e676' : isActive ? '#00b0ff' : '#7986cb';
-    div.innerHTML = `<div class="step-dot" style="border:1.5px solid ${dc};background:${isDone ? '#00e676' : 'transparent'}"></div>${s}`;
-    list.appendChild(div);
-  });
-}
+function renderSteps(done,current){const list=document.getElementById('stepsList');list.innerHTML='';STEPS.forEach((s,i)=>{const isDone=done.includes(i),isActive=current===i;const div=document.createElement('div');div.className='step-item '+(isDone?'done':isActive?'active':'pending');const dc=isDone?'#00e676':isActive?'#00b0ff':'#7986cb';div.innerHTML=`<div class="step-dot" style="border:1.5px solid ${dc};background:${isDone?'#00e676':'transparent'}"></div>${s}`;list.appendChild(div);});}
 
 // ===== RENDER RESULTADO =====
-function kv(k, v, c) {
-  return `<div class="kv-row"><span class="kv-key">${k}</span><span style="font-weight:700;color:${c||'#e8eaf6'};font-size:10px">${v != null ? v : 'N/A'}</span></div>`;
-}
-function subAcc(icon, title, content, open) {
-  const id = 'sa' + Math.random().toString(36).slice(2, 8);
-  return `<div style="border-top:1px solid rgba(0,176,255,.1)">
-    <div class="sub-acc-header" onclick="(function(){var b=document.getElementById('${id}b'),a=document.getElementById('${id}a'),o=b.style.display!=='none';b.style.display=o?'none':'block';a.style.transform=o?'':'rotate(180deg)'})()">
-      <span style="font-size:12px">${icon}</span>
-      <span style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#e8eaf6">${title}</span>
-      <span class="sub-acc-arrow" id="${id}a" style="${open?'transform:rotate(180deg)':''}">▼</span>
-    </div>
-    <div class="acc-sub-body" id="${id}b" style="${open?'':'display:none'}">${content}</div>
-  </div>`;
-}
-
-function renderResult(r) {
-  const mc = r.isBullish ? '#00e676' : '#ff1744';
-  const bgGrad = r.isBullish ? 'rgba(0,137,123,.2),rgba(0,230,118,.15)' : 'rgba(183,28,28,.2),rgba(255,23,68,.15)';
-  const bdc = r.isBullish ? 'rgba(0,230,118,.4)' : 'rgba(255,23,68,.4)';
-  const fList = [
-    {n:'F1 Falso Rompimento', ok:r.filtros.f1, desc:r.filtros.f1?'Pavio pequeno ✓':'Pavio grande → NÃO ENTRA'},
-    {n:'F2 Continuidade',     ok:r.filtros.f2, desc:r.filtros.f2?'Sem sequência forte ✓':`${r.seqVelas} velas seguidas → NÃO ENTRA`},
-    {n:'F3 Expansão Banda',   ok:r.filtros.f3, desc:r.filtros.f3?'Banda lateral ✓':'Bandas abrindo → NÃO ENTRA'},
-    {n:'F4 Distância',        ok:r.filtros.f4, desc:r.filtros.f4?'Rompimento próximo ✓':'Vela distante → NÃO ENTRA'},
-    {n:'F5 Confirmação',      ok:r.filtros.f5, desc:r.filtros.f5?'Exaustão confirmada ✓':'Aguardar confirmação'}
-  ];
-  const filtroHTML = fList.map(f => `<div class="filter-row"><span class="ficon">${f.ok?'✅':'🔴'}</span><span>${f.n}: ${f.desc}</span></div>`).join('');
-  let filtroClass = 'filter-fail';
-  if (r.filtrosPassados >= 4) filtroClass = 'filter-pass';
-  else if (r.filtrosPassados === 3) filtroClass = 'filter-warn';
-  const nivelBg = r.filtrosPassados <= 2 ? 'rgba(255,23,68,.1)' : r.filtrosPassados === 3 ? 'rgba(255,214,0,.08)' : 'rgba(0,230,118,.08)';
-  const nivelBorder = r.filtrosPassados <= 2 ? 'rgba(255,23,68,.35)' : r.filtrosPassados === 3 ? 'rgba(255,214,0,.3)' : 'rgba(0,230,118,.3)';
-  const pavioContent = kv('Pavio detectado', r.hasPavio?'Sim':'Não', r.hasPavio?'#ffd600':'#00e676') + kv('Análise', r.hasPavio?'Pavio presente':'Corpo dominante', mc);
-  const pavioCorpoContent = kv('Corpo', r.corpoPct+'%', '#00e676') + kv('Pavio total', r.pavioPct+'%', '#ffd600') + kv('Qualidade', r.corpoPct>=65?'EXCELENTE':'BOA', r.corpoPct>=65?'#00e676':'#ffd600');
-  const srContent = kv('Suporte', r.suporte, '#00e676') + kv('Resistência', r.resistencia, '#ff1744') + kv('Posição', r.isBullish?'Próximo suporte':'Próximo resistência', mc);
-  const velaContent = kv('Padrão', r.padrao, '#ffd600') + kv('Ratio G/V', r.ratioGreenRed, mc) + kv('Exaustão', r.exaustao+' pts', '#90caf9');
-  const priceContent = kv('Estrutura', r.isBullish?'HH/HL':'LH/LL', mc) + kv('Momentum', r.isBullish?'Bullish':'Bearish', mc);
-  const otcContent = kv('Tipo', 'Opção Binária / OTC', '#ab47bc') + kv('Expiração', '1 Minuto', '#ffd600') + kv('Gráfico', '15 segundos', '#00b0ff') + kv('Volatilidade', r.bandaAberta?'ALTA':'NORMAL', r.bandaAberta?'#ff5252':'#00e676');
-  const metodosHtml = [
-    activeMethods.has('sombra')     ? subAcc('✔️','Pavio/Sombra', pavioContent, true) : '',
-    activeMethods.has('pavioCorpo') ? subAcc('🕯️','Pavio+Corpo', pavioCorpoContent, false) : '',
-    activeMethods.has('sr')         ? subAcc('📊','Suporte/Resistência', srContent, false) : '',
-    activeMethods.has('vela')       ? subAcc('🕯️','Vela a Vela', velaContent, false) : '',
-    activeMethods.has('price')      ? subAcc('⚡','Price Action', priceContent, false) : '',
-    activeMethods.has('otc')        ? subAcc('💎','OTC + Binárias', otcContent, false) : '',
-  ].filter(Boolean).join('');
-
-  const html = `<div class="result-card">
-    <div class="result-header"><div class="result-done-text">✅ ANÁLISE CONCLUÍDA</div></div>
-    <div style="padding:8px 12px;background:rgba(0,176,255,.04);border-bottom:1px solid rgba(0,176,255,.1);font-size:9px;color:#7986cb;display:flex;justify-content:space-between">
-      <span>Modo: <b style="color:#90caf9">${r.modo.toUpperCase()}</b></span>
-      <span>Filtros: <b style="color:${r.filtrosPassados>=4?'#00e676':r.filtrosPassados===3?'#ffd600':'#ff5252'}">${r.filtrosPassados}/5</b></span>
-      <span>Prob: <b style="color:${mc}">${r.prob}%</b></span>
-    </div>
-    <div style="margin:8px 12px;padding:10px 12px;border-radius:9px;background:${nivelBg};border:1px solid ${nivelBorder}">
-      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:${r.nivelClass};margin-bottom:4px">${r.nivelEntrada}</div>
-      <div style="font-size:10px;color:#b0bec5;line-height:1.5">${r.nivelDesc}</div>
-    </div>
-    <div class="filters-result ${filtroClass}">
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;margin-bottom:7px;color:${r.filtrosPassados>=4?'#00e676':r.filtrosPassados===3?'#ffd600':'#ff5252'}">
-        ${r.filtrosPassados>=4?'✅ FILTROS OK':'🔴 FILTROS INSUFICIENTES'} — ${r.filtrosPassados}/5 aprovados
-      </div>
-      ${filtroHTML}
-    </div>
-    <div style="padding:12px 14px;text-align:center;border-bottom:1px solid rgba(0,176,255,.1)">
-      <div style="font-size:10px;letter-spacing:2px;color:#7986cb;text-transform:uppercase;margin-bottom:5px">Tendência detectada</div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;letter-spacing:3px;color:${mc}">${r.isBullish?'📈 ALTA':'📉 BAIXA'}</div>
-      <div style="margin-top:6px">
-        <span style="padding:3px 10px;border-radius:16px;font-size:11px;font-weight:700;background:${r.isBullish?'rgba(0,230,118,.15)':'rgba(255,23,68,.15)'};color:${mc}">Exaustão: ${r.exaustao} pts</span>
-        <span style="padding:3px 10px;border-radius:16px;font-size:11px;font-weight:700;background:rgba(0,176,255,.1);color:#90caf9;margin-left:6px">${r.padrao}</span>
-      </div>
-    </div>
-    <div style="padding:10px 14px;border-bottom:1px solid rgba(0,176,255,.1)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;font-weight:600">
-        <span style="color:#00e676">📈 Probabilidade de acerto</span>
-        <span style="color:${mc};font-weight:800">${r.prob}%</span>
-      </div>
-      <div style="height:7px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden">
-        <div style="height:100%;width:${r.prob}%;border-radius:10px;background:linear-gradient(90deg,#00897b,#00e676)"></div>
-      </div>
-    </div>
-    ${metodosHtml}
-    <div class="entry-alert" style="border:1px solid ${bdc};background:${r.isBullish?'rgba(0,230,118,.07)':'rgba(255,23,68,.07)'}">
-      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;margin-bottom:7px;color:${mc}">${r.isBullish?'🟢':'🔴'} SINAL ${r.sinal} — ${r.filtrosPassados>=4?'ENTRE AGORA':r.filtrosPassados===3?'AGUARDAR (risco alto)':'NÃO ENTRAR'}</div>
-      <div class="entry-alert-row"><span>⏱️ Expiração</span><span style="color:#ffd600">1 Minuto</span></div>
-      <div class="entry-alert-row"><span>📊 Gráfico</span><span>15 Segundos</span></div>
-      <div class="entry-alert-row"><span>🎯 Ação</span><span style="color:${mc};font-weight:700">${r.sinal}</span></div>
-      <div class="entry-alert-row"><span>🛡️ Mínimo filtros</span><span style="color:${r.nivelClass};font-weight:700">${r.filtrosPassados}/5 — ${r.nivelEntrada}</span></div>
-    </div>
-    <div class="final-signal" style="background:linear-gradient(135deg,${bgGrad});border:1px solid ${bdc}">
-      <div style="font-size:34px">${r.isBullish?'🟢':'🔴'}</div>
-      <div style="font-size:9px;letter-spacing:2px;color:#7986cb;text-transform:uppercase">SINAL DEFINITIVO</div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;letter-spacing:4px;color:${mc}">${r.sinal}</div>
-      <div style="font-size:10px;margin-top:4px;color:rgba(232,234,246,.7)">Bollinger 15s · ${r.filtrosPassados}/5 filtros</div>
-      <div style="margin-top:8px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap">
-        <span style="padding:3px 12px;border-radius:16px;font-size:10px;background:${r.isBullish?'rgba(0,230,118,.15)':'rgba(255,23,68,.15)'};color:${mc}">${r.prob}% confiança</span>
-        <span style="padding:3px 12px;border-radius:16px;font-size:10px;background:rgba(0,176,255,.1);color:#90caf9">Expiração: 1 min</span>
-        <span style="padding:3px 12px;border-radius:16px;font-size:10px;background:${nivelBg};color:${r.nivelClass};border:1px solid ${nivelBorder}">${r.filtrosPassados}/5 filtros</span>
-      </div>
-    </div>
-  </div>`;
-
-  const sec = document.getElementById('resultSection');
-  sec.innerHTML = html;
-  sec.classList.remove('hidden');
-  sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function kv(k,v,c){return`<div class="kv-row"><span class="kv-key">${k}</span><span style="font-weight:700;color:${c||'#e8eaf6'};font-size:10px">${v!=null?v:'N/A'}</span></div>`;}
+function subAcc(icon,title,content,open){const id='sa'+Math.random().toString(36).slice(2,8);return`<div style="border-top:1px solid rgba(0,176,255,.1)"><div class="sub-acc-header" onclick="(function(){var b=document.getElementById('${id}b'),a=document.getElementById('${id}a'),o=b.style.display!=='none';b.style.display=o?'none':'block';a.style.transform=o?'':'rotate(180deg)'})()"><span style="font-size:12px">${icon}</span><span style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#e8eaf6">${title}</span><span class="sub-acc-arrow" id="${id}a" style="${open?'transform:rotate(180deg)':''}">▼</span></div><div class="acc-sub-body" id="${id}b" style="${open?'':'display:none'}">${content}</div></div>`;}
+function renderResult(r){
+  const mc=r.isBullish?'#00e676':'#ff1744';const bgGrad=r.isBullish?'rgba(0,137,123,.2),rgba(0,230,118,.15)':'rgba(183,28,28,.2),rgba(255,23,68,.15)';const bdc=r.isBullish?'rgba(0,230,118,.4)':'rgba(255,23,68,.4)';
+  const fList=[{n:'F1 Falso Rompimento',ok:r.filtros.f1,desc:r.filtros.f1?'Pavio pequeno ✓':'Pavio grande → NÃO ENTRA'},{n:'F2 Continuidade',ok:r.filtros.f2,desc:r.filtros.f2?'Sem sequência forte ✓':`${r.seqVelas} velas seguidas → NÃO ENTRA`},{n:'F3 Expansão Banda',ok:r.filtros.f3,desc:r.filtros.f3?'Banda lateral ✓':'Bandas abrindo → NÃO ENTRA'},{n:'F4 Distância',ok:r.filtros.f4,desc:r.filtros.f4?'Rompimento próximo ✓':'Vela distante → NÃO ENTRA'},{n:'F5 Confirmação',ok:r.filtros.f5,desc:r.filtros.f5?'Exaustão confirmada ✓':'Aguardar confirmação'}];
+  const filtroHTML=fList.map(f=>`<div class="filter-row"><span class="ficon">${f.ok?'✅':'🔴'}</span><span>${f.n}: ${f.desc}</span></div>`).join('');
+  let filtroClass='filter-fail';if(r.filtrosPassados>=4)filtroClass='filter-pass';else if(r.filtrosPassados===3)filtroClass='filter-warn';
+  const nivelBg=r.filtrosPassados<=2?'rgba(255,23,68,.1)':r.filtrosPassados===3?'rgba(255,214,0,.08)':'rgba(0,230,118,.08)';const nivelBorder=r.filtrosPassados<=2?'rgba(255,23,68,.35)':r.filtrosPassados===3?'rgba(255,214,0,.3)':'rgba(0,230,118,.3)';
+  const pavioContent=kv('Pavio detectado',r.hasPavio?'Sim':'Não',r.hasPavio?'#ffd600':'#00e676')+kv('Análise',r.hasPavio?'Pavio presente':'Corpo dominante',mc);
+  const pavioCorpoContent=kv('Corpo',r.corpoPct+'%','#00e676')+kv('Pavio total',r.pavioPct+'%','#ffd600')+kv('Qualidade',r.corpoPct>=65?'EXCELENTE':'BOA',r.corpoPct>=65?'#00e676':'#ffd600');
+  const srContent=kv('Suporte',r.suporte,'#00e676')+kv('Resistência',r.resistencia,'#ff1744')+kv('Posição',r.isBullish?'Próximo suporte':'Próximo resistência',mc);
+  const velaContent=kv('Padrão',r.padrao,'#ffd600')+kv('Ratio G/V',r.ratioGreenRed,mc)+kv('Exaustão',r.exaustao+' pts','#90caf9');
+  const priceContent=kv('Estrutura',r.isBullish?'HH/HL':'LH/LL',mc)+kv('Momentum',r.isBullish?'Bullish':'Bearish',mc);
+  const otcContent=kv('Tipo','Opção Binária / OTC','#ab47bc')+kv('Expiração','1 Minuto','#ffd600')+kv('Gráfico','15 segundos','#00b0ff')+kv('Volatilidade',r.bandaAberta?'ALTA':'NORMAL',r.bandaAberta?'#ff5252':'#00e676');
+  const metodosHtml=[activeMethods.has('sombra')?subAcc('✔️','Pavio/Sombra',pavioContent,true):'',activeMethods.has('pavioCorpo')?subAcc('🕯️','Pavio+Corpo',pavioCorpoContent,false):'',activeMethods.has('sr')?subAcc('📊','Suporte/Resistência',srContent,false):'',activeMethods.has('vela')?subAcc('🕯️','Vela a Vela',velaContent,false):'',activeMethods.has('price')?subAcc('⚡','Price Action',priceContent,false):'',activeMethods.has('otc')?subAcc('💎','OTC + Binárias',otcContent,false):''].filter(Boolean).join('');
+  const html=`<div class="result-card"><div class="result-header"><div class="result-done-text">✅ ANÁLISE CONCLUÍDA</div></div><div style="padding:8px 12px;background:rgba(0,176,255,.04);border-bottom:1px solid rgba(0,176,255,.1);font-size:9px;color:#7986cb;display:flex;justify-content:space-between"><span>Modo: <b style="color:#90caf9">${r.modo.toUpperCase()}</b></span><span>Filtros: <b style="color:${r.filtrosPassados>=4?'#00e676':r.filtrosPassados===3?'#ffd600':'#ff5252'}">${r.filtrosPassados}/5</b></span><span>Prob: <b style="color:${mc}">${r.prob}%</b></span></div><div style="margin:8px 12px;padding:10px 12px;border-radius:9px;background:${nivelBg};border:1px solid ${nivelBorder}"><div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:${r.nivelClass};margin-bottom:4px">${r.nivelEntrada}</div><div style="font-size:10px;color:#b0bec5;line-height:1.5">${r.nivelDesc}</div></div><div class="filters-result ${filtroClass}"><div style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;margin-bottom:7px;color:${r.filtrosPassados>=4?'#00e676':r.filtrosPassados===3?'#ffd600':'#ff5252'}">${r.filtrosPassados>=4?'✅ FILTROS OK':'🔴 FILTROS INSUFICIENTES'} — ${r.filtrosPassados}/5 aprovados</div>${filtroHTML}</div><div style="padding:12px 14px;text-align:center;border-bottom:1px solid rgba(0,176,255,.1)"><div style="font-size:10px;letter-spacing:2px;color:#7986cb;text-transform:uppercase;margin-bottom:5px">Tendência detectada</div><div style="font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;letter-spacing:3px;color:${mc}">${r.isBullish?'📈 ALTA':'📉 BAIXA'}</div><div style="margin-top:6px"><span style="padding:3px 10px;border-radius:16px;font-size:11px;font-weight:700;background:${r.isBullish?'rgba(0,230,118,.15)':'rgba(255,23,68,.15)'};color:${mc}">Exaustão: ${r.exaustao} pts</span><span style="padding:3px 10px;border-radius:16px;font-size:11px;font-weight:700;background:rgba(0,176,255,.1);color:#90caf9;margin-left:6px">${r.padrao}</span></div></div><div style="padding:10px 14px;border-bottom:1px solid rgba(0,176,255,.1)"><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;font-weight:600"><span style="color:#00e676">📈 Probabilidade de acerto</span><span style="color:${mc};font-weight:800">${r.prob}%</span></div><div style="height:7px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden"><div style="height:100%;width:${r.prob}%;border-radius:10px;background:linear-gradient(90deg,#00897b,#00e676)"></div></div></div>${metodosHtml}<div class="entry-alert" style="border:1px solid ${bdc};background:${r.isBullish?'rgba(0,230,118,.07)':'rgba(255,23,68,.07)'}"><div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;margin-bottom:7px;color:${mc}">${r.isBullish?'🟢':'🔴'} SINAL ${r.sinal} — ${r.filtrosPassados>=4?'ENTRE AGORA':r.filtrosPassados===3?'AGUARDAR (risco alto)':'NÃO ENTRAR'}</div><div class="entry-alert-row"><span>⏱️ Expiração</span><span style="color:#ffd600">1 Minuto</span></div><div class="entry-alert-row"><span>📊 Gráfico</span><span>15 Segundos</span></div><div class="entry-alert-row"><span>🎯 Ação</span><span style="color:${mc};font-weight:700">${r.sinal}</span></div><div class="entry-alert-row"><span>🛡️ Mínimo filtros</span><span style="color:${r.nivelClass};font-weight:700">${r.filtrosPassados}/5 — ${r.nivelEntrada}</span></div></div><div class="final-signal" style="background:linear-gradient(135deg,${bgGrad});border:1px solid ${bdc}"><div style="font-size:34px">${r.isBullish?'🟢':'🔴'}</div><div style="font-size:9px;letter-spacing:2px;color:#7986cb;text-transform:uppercase">SINAL DEFINITIVO</div><div style="font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;letter-spacing:4px;color:${mc}">${r.sinal}</div><div style="font-size:10px;margin-top:4px;color:rgba(232,234,246,.7)">Bollinger 15s · ${r.filtrosPassados}/5 filtros</div><div style="margin-top:8px;display:flex;gap:7px;justify-content:center;flex-wrap:wrap"><span style="padding:3px 12px;border-radius:16px;font-size:10px;background:${r.isBullish?'rgba(0,230,118,.15)':'rgba(255,23,68,.15)'};color:${mc}">${r.prob}% confiança</span><span style="padding:3px 12px;border-radius:16px;font-size:10px;background:rgba(0,176,255,.1);color:#90caf9">Expiração: 1 min</span><span style="padding:3px 12px;border-radius:16px;font-size:10px;background:${nivelBg};color:${r.nivelClass};border:1px solid ${nivelBorder}">${r.filtrosPassados}/5 filtros</span></div></div></div>`;
+  const sec=document.getElementById('resultSection');sec.innerHTML=html;sec.classList.remove('hidden');sec.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // Init
 renderSavedKeys();
 document.getElementById('sharpBtn').classList.add('active-sharp');
-document.getElementById('sharpBtn').textContent = '✨ Nítido ON';
+document.getElementById('sharpBtn').textContent='✨ Nítido ON';
 </script>
 </body>
 </html>
