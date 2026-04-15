@@ -18,6 +18,7 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 @keyframes scan{0%{top:0}100%{top:100%}}
 @keyframes scanline{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes camPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,.5)}70%{box-shadow:0 0 0 10px rgba(255,23,68,0)}}
 
 .header{background:linear-gradient(135deg,#0d1525,#111827);border-bottom:1px solid rgba(0,176,255,.18);padding:16px 20px 12px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
 .header-scanline{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b0ff,#00e676,#00b0ff,transparent);animation:scanline 3s linear infinite}
@@ -74,59 +75,174 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 .btn-file{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#0288d1,#00b0ff);color:#fff;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 3px 14px rgba(0,176,255,.3);cursor:pointer}
 .btn-cam{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:#fff;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;box-shadow:0 3px 14px rgba(156,39,176,.3);cursor:pointer}
 
-/* ===== PREVIEW CORRIGIDO - FRAME 324x200 ===== */
-.preview-wrap{margin:10px 14px 0}
-.preview-outer{
-  width:100%;
-  max-width:324px;  /* Largura fixa do frame */
-  margin:0 auto;    /* Centralizado */
-  background:linear-gradient(135deg,#0d1525,#111827);
-  border:2px solid rgba(0,176,255,.3);
-  border-radius:12px;
-  overflow:hidden;
-  position:relative;
-}
-
-/* Área do canvas com altura fixa de 200px */
-.preview-canvas-area{
-  width:100%;
-  height:200px;  /* Altura fixa do frame */
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#060a10;
-  position:relative;
-  overflow:hidden;
-}
-
-/* Placeholder centralizado */
-.preview-placeholder{
-  display:flex;
+/* ===== CÂMERA MANUAL ===== */
+#cameraOverlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000;
+  z-index:9000;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
-  color:#7986cb;
-  text-align:center;
-  width:100%;
 }
+#cameraOverlay.visible{display:flex}
+.cam-video-wrap{
+  position:relative;
+  width:100%;
+  max-width:520px;
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#camVideo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+/* Grade de enquadramento */
+.cam-grid{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.cam-grid-line-h{
+  position:absolute;
+  left:0;right:0;
+  height:1px;
+  background:rgba(0,230,118,.25);
+}
+.cam-grid-line-v{
+  position:absolute;
+  top:0;bottom:0;
+  width:1px;
+  background:rgba(0,230,118,.25);
+}
+/* Cantos de enquadramento */
+.cam-corner{
+  position:absolute;
+  width:28px;height:28px;
+  border-color:#00e676;
+  border-style:solid;
+  opacity:.85;
+}
+.cam-corner.tl{top:16px;left:16px;border-width:3px 0 0 3px}
+.cam-corner.tr{top:16px;right:16px;border-width:3px 3px 0 0}
+.cam-corner.bl{bottom:16px;left:16px;border-width:0 0 3px 3px}
+.cam-corner.br{bottom:16px;right:16px;border-width:0 3px 3px 0}
+/* Barra superior da câmera */
+.cam-top-bar{
+  width:100%;
+  max-width:520px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 16px 10px;
+  background:linear-gradient(180deg,rgba(0,0,0,.9),transparent);
+  position:relative;
+  z-index:2;
+}
+.cam-title{
+  font-family:'Rajdhani',sans-serif;
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:2px;
+  color:#00e676;
+  text-transform:uppercase;
+}
+.cam-close{
+  width:36px;height:36px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(0,0,0,.5);
+  color:#fff;
+  font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+/* Barra inferior da câmera */
+.cam-bottom-bar{
+  width:100%;
+  max-width:520px;
+  padding:16px 24px 28px;
+  background:linear-gradient(0deg,rgba(0,0,0,.95),transparent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+}
+.cam-hint{
+  font-size:11px;
+  color:rgba(255,255,255,.55);
+  letter-spacing:1px;
+  text-align:center;
+}
+/* BOTÃO DISPARADOR */
+.btn-shutter{
+  width:72px;height:72px;
+  border-radius:50%;
+  border:4px solid #fff;
+  background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:transform .1s, box-shadow .15s;
+  position:relative;
+}
+.btn-shutter:active{
+  transform:scale(.92);
+}
+.btn-shutter-inner{
+  width:54px;height:54px;
+  border-radius:50%;
+  background:#fff;
+  transition:background .1s, transform .1s;
+  animation:camPulse 2s infinite;
+}
+.btn-shutter:active .btn-shutter-inner{
+  background:#ff1744;
+  transform:scale(.85);
+}
+/* Flash effect */
+#flashOverlay{
+  position:fixed;inset:0;
+  background:#fff;
+  opacity:0;
+  pointer-events:none;
+  z-index:9999;
+  transition:opacity .08s;
+}
+#flashOverlay.flash{opacity:1}
 
-/* IMAGEM: preenche TODO o frame 324x200 */
+/* ===== PREVIEW MELHORADO ===== */
+.preview-wrap{margin:10px 14px 0}
+.preview-outer{width:100%;background:linear-gradient(135deg,#0d1525,#111827);border:2px solid rgba(0,176,255,.3);border-radius:12px;overflow:hidden;position:relative}
+.img-toolbar{display:flex;align-items:center;gap:6px;padding:7px 10px;background:rgba(0,0,0,.55);border-bottom:1px solid rgba(0,176,255,.18);flex-wrap:wrap}
+.img-tool-btn{padding:5px 11px;border-radius:7px;border:1px solid rgba(0,176,255,.3);background:rgba(0,176,255,.1);color:#90caf9;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.5px;transition:background .2s}
+.img-tool-btn:hover{background:rgba(0,176,255,.25)}
+.img-tool-btn.active-sharp{background:rgba(0,230,118,.15);border-color:rgba(0,230,118,.4);color:#00e676}
+.img-tool-sep{width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 2px}
+.img-zoom-label{font-size:10px;color:#7986cb;font-family:'Rajdhani',sans-serif;white-space:nowrap}
+.preview-canvas-area{width:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#060a10;min-height:200px;position:relative;cursor:grab}
+.preview-canvas-area:active{cursor:grabbing}
 #previewImg{
   display:none;
-  width:324px !important;     /* Largura fixa do frame */
-  height:200px !important;    /* Altura fixa do frame */
-  object-fit:cover !important; /* Preenche completamente, cortando se necessário */
-  transition:filter .3s;
+  max-width:100%;
+  max-height:100%;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+  transition:filter .3s,transform .3s;
   transform-origin:center center;
   image-rendering:auto;
-  vertical-align:top;
-  margin:0 !important;
-  padding:0 !important;
-  border:0 !important;
 }
-/* ========================================================= */
-
+#previewImg.sharp-on{
+  filter:contrast(1.18) saturate(1.2) brightness(1.04);
+  image-rendering:crisp-edges;
+}
+.preview-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;color:#7986cb;padding:40px 0}
 .scan-bar{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#00b0ff,transparent);animation:scan 2s linear infinite;top:0;pointer-events:none}
 .img-info-bar{padding:5px 10px;background:rgba(0,0,0,.4);border-top:1px solid rgba(0,176,255,.12);font-size:9px;color:#546e7a;display:flex;justify-content:space-between;align-items:center}
 
@@ -173,6 +289,37 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 </head>
 <body>
 <div class="bg-glow"></div>
+
+<!-- ===== OVERLAY DA CÂMERA MANUAL ===== -->
+<div id="cameraOverlay">
+  <div id="flashOverlay"></div>
+  <div class="cam-top-bar">
+    <div class="cam-title">📷 Enquadre o Gráfico</div>
+    <button class="cam-close" onclick="fecharCamera()" title="Fechar câmera">✕</button>
+  </div>
+  <div class="cam-video-wrap">
+    <video id="camVideo" autoplay playsinline muted></video>
+    <!-- Grade de enquadramento -->
+    <div class="cam-grid">
+      <div class="cam-grid-line-h" style="top:33.3%"></div>
+      <div class="cam-grid-line-h" style="top:66.6%"></div>
+      <div class="cam-grid-line-v" style="left:33.3%"></div>
+      <div class="cam-grid-line-v" style="left:66.6%"></div>
+      <div class="cam-corner tl"></div>
+      <div class="cam-corner tr"></div>
+      <div class="cam-corner bl"></div>
+      <div class="cam-corner br"></div>
+    </div>
+  </div>
+  <div class="cam-bottom-bar">
+    <div class="cam-hint">Enquadre o gráfico e pressione o botão</div>
+    <button class="btn-shutter" id="btnShutter" onclick="dispararFoto()" title="Tirar foto">
+      <div class="btn-shutter-inner"></div>
+    </button>
+  </div>
+</div>
+<!-- ===================================== -->
+
 <div id="app">
 <div class="content">
 
@@ -290,29 +437,38 @@ button{cursor:pointer;font-family:'Exo 2',sans-serif}
 <!-- BOTÕES DE SELEÇÃO -->
 <div class="btn-grid">
   <button class="btn-file" onclick="document.getElementById('fileInput').click()">📂 Selecionar Gráfico</button>
-  <button class="btn-cam" onclick="captureFromCamera()">📷 Capturar Câmera</button>
+  <button class="btn-cam" onclick="abrirCamera()">📷 Capturar Câmera</button>
 </div>
 <input id="fileInput" type="file" accept="image/*" style="display:none" onchange="handleFile(this)"/>
-<video id="video" style="display:none;width:100%;border-radius:12px;margin-top:8px" autoplay playsinline></video>
 <canvas id="canvas" style="display:none"></canvas>
 
-<!-- PREVIEW CORRIGIDO - FRAME 324x200 -->
+<!-- PREVIEW MELHORADO -->
 <div class="preview-wrap">
   <div class="preview-outer">
-    <!-- Área da imagem com altura fixa 200px -->
+    <div class="img-toolbar" id="imgToolbar" style="display:none">
+      <button class="img-tool-btn" onclick="rotateImage(-90)" title="Girar esquerda">↺ -90°</button>
+      <button class="img-tool-btn" onclick="rotateImage(90)" title="Girar direita">↻ +90°</button>
+      <div class="img-tool-sep"></div>
+      <button class="img-tool-btn" onclick="zoomImg(-0.15)" title="Diminuir zoom">🔍-</button>
+      <span class="img-zoom-label" id="zoomLabel">100%</span>
+      <button class="img-tool-btn" onclick="zoomImg(0.15)" title="Aumentar zoom">🔍+</button>
+      <button class="img-tool-btn" onclick="resetZoom()" title="Reset">⊡</button>
+      <div class="img-tool-sep"></div>
+      <button class="img-tool-btn" id="sharpBtn" onclick="toggleSharp()" title="Nitidez">✨ Nítido</button>
+    </div>
     <div class="preview-canvas-area" id="previewBox">
       <div class="preview-placeholder" id="previewPlaceholder">
         <div style="font-size:40px;opacity:.3">📈</div>
         <p style="font-size:11px">Aguardando gráfico 15 segundos...</p>
-        <p style="font-size:9px;color:#546e7a;margin-top:4px">A imagem preencherá todo o frame 324x200</p>
+        <p style="font-size:9px;color:#546e7a;margin-top:4px">A imagem preencherá toda esta área</p>
       </div>
       <img id="previewImg" src="" alt="Gráfico"/>
       <div class="scan-bar hidden" id="scanBar"></div>
     </div>
-    <!-- Barra de info -->
     <div class="img-info-bar" id="imgInfoBar" style="display:none">
       <span id="imgDimInfo">—</span>
-      <span style="color:#00e676;font-weight:700">✓ Imagem carregada (324x200)</span>
+      <span id="imgRotInfo">Rot: 0°</span>
+      <span style="color:#00e676;font-weight:700">✓ Imagem carregada</span>
     </div>
   </div>
 </div>
@@ -365,7 +521,143 @@ let analyzing = false;
 let stepTimer = null;
 let savedKeys = [];
 
+// Estado imagem
+let imgRotation = 0;
+let imgZoom = 1.0;
+let sharpMode = true;
+
+// Estado câmera
+let cameraStream = null;
+
 try { const r = localStorage.getItem('traderKeys'); if (r) savedKeys = JSON.parse(r); } catch(e) {}
+
+// ===== ÁUDIO DE CLIQUE (disparo) =====
+function tocarSomClick() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Som mecânico de obturador: dois cliques rápidos
+    function clique(offset, freq, dur) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + offset);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.3, ctx.currentTime + offset + dur);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + dur);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + dur + 0.01);
+    }
+
+    // Ruído branco curto (mecânico)
+    function ruido(offset, dur) {
+      const bufSize = Math.floor(ctx.sampleRate * dur);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.35;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const gain = ctx.createGain();
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.7, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + dur);
+      src.start(ctx.currentTime + offset);
+    }
+
+    // 1° clique (abertura)
+    clique(0, 1200, 0.04);
+    ruido(0, 0.045);
+    // 2° clique (fechamento)
+    clique(0.06, 900, 0.035);
+    ruido(0.06, 0.038);
+
+    // Fecha contexto após uso
+    setTimeout(() => { try { ctx.close(); } catch(e){} }, 500);
+  } catch(e) {
+    console.warn('Áudio não disponível:', e);
+  }
+}
+
+// ===== EFEITO FLASH VISUAL =====
+function flashVisual() {
+  const el = document.getElementById('flashOverlay');
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 120);
+}
+
+// ===== CÂMERA MANUAL =====
+async function abrirCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    cameraStream = stream;
+    const video = document.getElementById('camVideo');
+    video.srcObject = stream;
+    await video.play();
+    const overlay = document.getElementById('cameraOverlay');
+    overlay.classList.add('visible');
+    showToast('📷 Enquadre o gráfico e pressione o botão!');
+  } catch(e) {
+    showError('Câmera: ' + e.message);
+  }
+}
+
+function fecharCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  const video = document.getElementById('camVideo');
+  video.srcObject = null;
+  document.getElementById('cameraOverlay').classList.remove('visible');
+}
+
+function dispararFoto() {
+  const video = document.getElementById('camVideo');
+  if (!video.videoWidth) { showToast('⚠️ Câmera ainda carregando...'); return; }
+
+  // Áudio + flash
+  tocarSomClick();
+  flashVisual();
+
+  // Captura do frame
+  const cvs = document.getElementById('canvas');
+  cvs.width = video.videoWidth;
+  cvs.height = video.videoHeight;
+  const ctx = cvs.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  if (sharpMode) applySharpenFilter(ctx, cvs.width, cvs.height);
+
+  currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+  const dataUrl = cvs.toDataURL('image/jpeg', 0.98);
+  currentImageBase64 = dataUrl.split(',')[1];
+
+  imgRotation = 0; imgZoom = 1.0;
+
+  // Exibe preview
+  document.getElementById('previewPlaceholder').style.display = 'none';
+  const pi = document.getElementById('previewImg');
+  pi.src = dataUrl;
+  pi.style.display = 'block';
+  if (sharpMode) { pi.classList.add('sharp-on'); }
+  applyImgTransform();
+  document.getElementById('imgDimInfo').textContent = cvs.width + '×' + cvs.height + 'px';
+  showImgControls(true);
+
+  setStatus('✅ Foto capturada! Clique em ANALISAR.');
+  hideError();
+  updateBtn();
+
+  // Fecha câmera após 250ms (para ver o flash)
+  setTimeout(() => fecharCamera(), 250);
+
+  showToast('📸 Foto capturada com sucesso!');
+}
 
 // ===== UTILITÁRIOS =====
 function showToast(msg) {
@@ -378,6 +670,106 @@ function showToast(msg) {
 function setStatus(t) { document.getElementById('statusText').textContent = t; }
 function showError(m) { document.getElementById('errorMsg').textContent = m; document.getElementById('errorBox').classList.remove('hidden'); }
 function hideError() { document.getElementById('errorBox').classList.add('hidden'); }
+
+// ===== CONTROLES DE IMAGEM =====
+function applyImgTransform() {
+  const img = document.getElementById('previewImg');
+  const pct = Math.round(imgZoom * 100);
+  document.getElementById('zoomLabel').textContent = pct + '%';
+  document.getElementById('imgRotInfo').textContent = 'Rot: ' + (imgRotation % 360) + '°';
+  img.style.transform = `rotate(${imgRotation}deg) scale(${imgZoom})`;
+  if (imgRotation % 180 !== 0) {
+    img.style.width = 'auto';
+    img.style.height = '100%';
+    img.style.maxWidth = 'none';
+  } else {
+    img.style.width = '100%';
+    img.style.height = 'auto';
+    img.style.maxWidth = '100%';
+  }
+}
+
+function rotateImage(deg) {
+  imgRotation = (imgRotation + deg + 360) % 360;
+  applyImgTransform();
+  rebakeCanvas();
+}
+
+function zoomImg(delta) {
+  imgZoom = Math.max(0.4, Math.min(4.0, imgZoom + delta));
+  applyImgTransform();
+}
+
+function resetZoom() {
+  imgZoom = 1.0;
+  imgRotation = 0;
+  applyImgTransform();
+}
+
+function toggleSharp() {
+  sharpMode = !sharpMode;
+  const img = document.getElementById('previewImg');
+  const btn = document.getElementById('sharpBtn');
+  if (sharpMode) {
+    img.classList.add('sharp-on');
+    btn.classList.add('active-sharp');
+    btn.textContent = '✨ Nítido ON';
+    showToast('✨ Nitidez aumentada!');
+  } else {
+    img.classList.remove('sharp-on');
+    btn.classList.remove('active-sharp');
+    btn.textContent = '✨ Nítido';
+    showToast('Nitidez padrão');
+  }
+}
+
+function rebakeCanvas() {
+  const img = document.getElementById('previewImg');
+  if (!img.src || img.src === window.location.href) return;
+  const cvs = document.getElementById('canvas');
+  const rad = (imgRotation * Math.PI) / 180;
+  const sin = Math.abs(Math.sin(rad)), cos = Math.abs(Math.cos(rad));
+  const nw = Math.round(img.naturalWidth * cos + img.naturalHeight * sin);
+  const nh = Math.round(img.naturalWidth * sin + img.naturalHeight * cos);
+  cvs.width = nw;
+  cvs.height = nh;
+  const ctx = cvs.getContext('2d');
+  ctx.clearRect(0, 0, nw, nh);
+  ctx.save();
+  ctx.translate(nw / 2, nh / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+  ctx.restore();
+  if (sharpMode) applySharpenFilter(ctx, nw, nh);
+  currentImageData = ctx.getImageData(0, 0, nw, nh);
+}
+
+function applySharpenFilter(ctx, w, h) {
+  try {
+    const src = ctx.getImageData(0, 0, w, h);
+    const dst = ctx.createImageData(w, h);
+    const d = src.data, o = dst.data;
+    const kernel = [0,-1,0,-1,5,-1,0,-1,0];
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const idx = (y * w + x) * 4;
+        for (let c = 0; c < 3; c++) {
+          let val = 0;
+          for (let ky = -1; ky <= 1; ky++) {
+            for (let kx = -1; kx <= 1; kx++) {
+              const ki = (ky + 1) * 3 + (kx + 1);
+              const pi = ((y + ky) * w + (x + kx)) * 4;
+              val += d[pi + c] * kernel[ki];
+            }
+          }
+          o[idx + c] = Math.max(0, Math.min(255, val));
+        }
+        o[idx + 3] = d[idx + 3];
+      }
+    }
+    ctx.putImageData(dst, 0, 0);
+  } catch(e) {}
+}
 
 // ===== ACCORDION =====
 function toggleAcc(id) {
@@ -471,8 +863,9 @@ function toggleMeth(btn) {
   else { activeMethods.add(m); btn.classList.remove('inactive'); btn.classList.add('active'); }
 }
 
-// ===== IMAGEM =====
+// ===== IMAGEM (arquivo) =====
 function showImgControls(show) {
+  document.getElementById('imgToolbar').style.display = show ? 'flex' : 'none';
   document.getElementById('imgInfoBar').style.display = show ? 'flex' : 'none';
 }
 
@@ -485,28 +878,25 @@ function handleFile(input) {
     const dataUrl = ev.target.result;
     const img = new Image();
     img.onload = () => {
+      imgRotation = 0;
+      imgZoom = 1.0;
       const cvs = document.getElementById('canvas');
       cvs.width = img.width;
       cvs.height = img.height;
       const ctx = cvs.getContext('2d');
       ctx.drawImage(img, 0, 0);
+      if (sharpMode) applySharpenFilter(ctx, img.width, img.height);
       currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
       currentImageBase64 = cvs.toDataURL('image/jpeg', 0.98).split(',')[1];
-
       document.getElementById('previewPlaceholder').style.display = 'none';
       const pi = document.getElementById('previewImg');
       pi.src = dataUrl;
       pi.style.display = 'block';
-      
-      // Força a imagem a ter exatamente 324x200
-      pi.style.width = '324px';
-      pi.style.height = '200px';
-      pi.style.objectFit = 'cover';
-
-      document.getElementById('imgDimInfo').textContent = '324×200 (frame) | Original: ' + img.width + '×' + img.height + 'px';
+      if (sharpMode) { pi.classList.add('sharp-on'); document.getElementById('sharpBtn').classList.add('active-sharp'); document.getElementById('sharpBtn').textContent = '✨ Nítido ON'; }
+      applyImgTransform();
+      document.getElementById('imgDimInfo').textContent = img.width + '×' + img.height + 'px';
       showImgControls(true);
-
-      setStatus('✅ Gráfico carregado! Clique ANALISAR.');
+      setStatus('✅ Gráfico carregado! Use os controles e clique ANALISAR.');
       hideError();
       document.getElementById('resultSection').innerHTML = '';
       document.getElementById('resultSection').classList.add('hidden');
@@ -516,47 +906,6 @@ function handleFile(input) {
   };
   reader.readAsDataURL(file);
   input.value = '';
-}
-
-async function captureFromCamera() {
-  try {
-    const video = document.getElementById('video');
-    const cvs = document.getElementById('canvas');
-    video.style.display = 'block';
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
-    video.srcObject = stream;
-    await video.play();
-    showToast('📷 Câmera ativa! Aguarde captura...');
-    setTimeout(() => {
-      cvs.width = video.videoWidth || 1280;
-      cvs.height = video.videoHeight || 720;
-      const ctx = cvs.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      currentImageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
-      const dataUrl = cvs.toDataURL('image/jpeg', 0.98);
-      currentImageBase64 = dataUrl.split(',')[1];
-
-      document.getElementById('previewPlaceholder').style.display = 'none';
-      const pi = document.getElementById('previewImg');
-      pi.src = dataUrl;
-      pi.style.display = 'block';
-      
-      // Força a imagem a ter exatamente 324x200
-      pi.style.width = '324px';
-      pi.style.height = '200px';
-      pi.style.objectFit = 'cover';
-      
-      document.getElementById('imgDimInfo').textContent = '324×200 (frame) | Original: ' + cvs.width + '×' + cvs.height + 'px';
-      showImgControls(true);
-
-      stream.getTracks().forEach(t => t.stop());
-      video.style.display = 'none';
-      setStatus('✅ Foto capturada! Clique em ANALISAR.');
-      updateBtn();
-    }, 1500);
-  } catch(e) {
-    showError('Câmera: ' + e.message);
-  }
 }
 
 function updateBtn() {
@@ -576,10 +925,16 @@ function resetAll() {
   currentImageData = null;
   currentImageBase64 = null;
   analyzing = false;
+  imgRotation = 0; imgZoom = 1.0;
   if (stepTimer) clearInterval(stepTimer);
+  fecharCamera();
   const pi = document.getElementById('previewImg');
   pi.src = '';
   pi.style.display = 'none';
+  pi.classList.remove('sharp-on');
+  pi.style.transform = '';
+  pi.style.width = '100%';
+  pi.style.height = 'auto';
   document.getElementById('previewPlaceholder').style.display = 'flex';
   document.getElementById('scanBar').classList.add('hidden');
   showImgControls(false);
@@ -662,6 +1017,7 @@ function gerarAnalise(p) {
 // ===== ANÁLISE PRINCIPAL =====
 function analyzeImage() {
   if (!currentImageData || analyzing) return;
+  rebakeCanvas();
   analyzing = true;
   updateBtn();
   hideError();
@@ -818,6 +1174,8 @@ function renderResult(r) {
 
 // Init
 renderSavedKeys();
+document.getElementById('sharpBtn').classList.add('active-sharp');
+document.getElementById('sharpBtn').textContent = '✨ Nítido ON';
 </script>
 </body>
 </html>
